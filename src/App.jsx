@@ -473,7 +473,7 @@ export default function App() {
         </div>
         <iframe
           title="preview"
-          style={{ width: "100%", height: "100vh", border: "none" }}
+          style={{ width: "100%", height: "150vh", border: "none" }}
           srcDoc={html}
         />
       </div>
