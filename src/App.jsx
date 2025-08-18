@@ -149,10 +149,7 @@ function replaceBlock(html, name, newBody) {
 }
 
 function escapeText(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // very small allowlist for paragraph rich text (a, br, strong, em)
@@ -203,6 +200,41 @@ const sectionHTML = {
 </table>`.trim(),
 };
 
+/* ===================== Pretty CSS (no libs) ===================== */
+const editorCSS = `
+:root{
+  --bg:#0b1220; --card:#101729; --muted:#9aa4b2; --text:#e6ebf5; --brand:#667eea; --brand2:#3643ba; --ok:#16a34a;
+}
+body{background:#0b1220;}
+.editor-wrap{display:grid;grid-template-columns:560px 1fr;gap:16px;padding:16px}
+@media (max-width:1100px){.editor-wrap{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid #1d2640;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);color:var(--text)}
+.panel h2{margin:0;padding:14px 16px;border-bottom:1px solid #1d2640;background:linear-gradient(135deg, #101729, #0d1424)}
+.panel-body{padding:14px 16px}
+.label{font-weight:600;margin-bottom:6px;color:#d7def1}
+.help{font-size:12px;color:var(--muted)}
+.row{margin-bottom:12px}
+.input, .select, .btn{
+  border-radius:10px;border:1px solid #27314f;
+  padding:10px 12px;outline:none
+}
+.input:focus, .select:focus{box-shadow:0 0 0 2px rgba(102,126,234,.35);border-color:#3b49a1}
+.btn{display:inline-flex;gap:8px;align-items:center;cursor:pointer;transition:.15s ease;border-color:#2a3660}
+.btn:hover{background:#121a32}
+.btn.primary{background:linear-gradient(135deg, var(--brand), var(--brand2));border-color:transparent}
+.btn.good{background:linear-gradient(135deg,#10b981,#059669);border-color:transparent}
+.stack{display:flex;gap:8px;flex-wrap:wrap}
+.card{border:1px solid #27314f;background:#0c1428;border-radius:12px;padding:10px}
+.card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.badge{font-size:12px;color:#b9c2d0;background:#111a31;border:1px solid #27314f;padding:2px 8px;border-radius:999px}
+.drag{cursor:grab;user-select:none}
+.preview{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
+.preview .title{padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;background:#f9fafb}
+iframe{background:#fff}
+.separator{height:1px;background:#1d2640;margin:12px 0}
+small.k{color:#b9c2d0}
+`;
+
 /* ===================== Main App ===================== */
 export default function App() {
   const [brand, setBrand] = useState("myclub"); // 'myclub' | 'decathlon'
@@ -252,6 +284,7 @@ export default function App() {
   const getBlockValue = (name) =>
     (blocks.find((b) => b.name === name)?.body || "").trim();
 
+  // Inject HEADER/FOOTER when brand changes
   useEffect(() => {
     let h = html;
     if (blocks.find((b) => b.name === "HEADER")) {
@@ -264,6 +297,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brand]);
 
+  // Rebuild SECTIONS when sections change
   useEffect(() => {
     const bodyHtml = sections
       .map((s) => {
@@ -289,7 +323,6 @@ export default function App() {
 
   /* --------- Drag & drop for sections --------- */
   const draggingId = useRef(null);
-
   const onDragStart = (id) => (e) => {
     draggingId.current = id;
     e.dataTransfer.effectAllowed = "move";
@@ -318,23 +351,78 @@ export default function App() {
       ...s,
       { id: cryptoRandom(), type: "paragraph", content: "New paragraph..." },
     ]);
-
   const addCTA = () =>
     setSections((s) => [
       ...s,
-      {
-        id: cryptoRandom(),
-        type: "cta",
-        label: "Click here",
-        href: "https://example.com",
-      },
+      { id: cryptoRandom(), type: "cta", label: "Click here", href: "https://example.com" },
     ]);
-
-  const removeSection = (id) =>
-    setSections((s) => s.filter((x) => x.id !== id));
-
+  const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
   const updateSection = (id, patch) =>
     setSections((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  /* --------- Import / Export JSON --------- */
+  const exportJSON = () => {
+    const json = {
+      version: 1,
+      brand,
+      fields: {
+        SNIPPET: getBlockValue("SNIPPET"),
+        GREETING: getBlockValue("GREETING"),
+        SIGNOFF: getBlockValue("SIGNOFF"),
+      },
+      sections,
+    };
+    const blob = new Blob([JSON.stringify(json, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `email-config.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importInputRef = useRef(null);
+  const importJSON = (file) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        // brand
+        if (data.brand && (data.brand === "myclub" || data.brand === "decathlon")) {
+          setBrand(data.brand);
+        }
+        // sections
+        if (Array.isArray(data.sections)) {
+          // Ensure IDs
+          const fixed = data.sections.map((s) => ({
+            id: s.id || cryptoRandom(),
+            type: s.type === "cta" ? "cta" : "paragraph",
+            content: s.type === "paragraph" ? (s.content || "") : undefined,
+            label: s.type === "cta" ? (s.label || "Click here") : undefined,
+            href: s.type === "cta" ? (s.href || "https://example.com") : undefined,
+          }));
+          setSections(fixed);
+        }
+        // fields
+        const fields = data.fields || {};
+        setHtml((prev) => {
+          let h = prev;
+          if (typeof fields.SNIPPET === "string")
+            h = replaceBlock(h, "SNIPPET", `\n${escapeText(fields.SNIPPET)}\n`);
+          if (typeof fields.GREETING === "string")
+            h = replaceBlock(h, "GREETING", `\n${escapeText(fields.GREETING)}\n`);
+          if (typeof fields.SIGNOFF === "string")
+            h = replaceBlock(h, "SIGNOFF", `\n${escapeText(fields.SIGNOFF)}\n`);
+          return h;
+        });
+      } catch (e) {
+        alert("Invalid JSON file.");
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const exportHtml = () => {
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -347,159 +435,177 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "580px 1fr", gap: 16, padding: 16 }}>
-      <div style={{ minWidth: 340 }}>
-        <h2 style={{ marginTop: 0 }}>Email Editor</h2>
+    <>
+      <style>{editorCSS}</style>
 
-        {/* Brand */}
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
-            Brand
-          </label>
-          <select
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-            style={{ width: "50%", padding: 8 }}
-          >
-            <option value="myclub">My Club</option>
-            <option value="decathlon">Decathlon Club</option>
-          </select><br />
-          <small style={{ color: "#555" }}>Automatically fills HEADER and FOOTER.</small>
-        </div>
+      <div className="editor-wrap">
+        {/* Left panel: Editor */}
+        <div className="panel">
+          <h2>Email Editor</h2>
+          <div className="panel-body">
 
-        {/* Fixed fields */}
-        <FieldText
-          label="Snippet Text"
-          name="SNIPPET"
-          value={getBlockValue("SNIPPET").replace(/\n/g, " ").trim()}
-          onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
-          max={80}
-        />
-        <FieldText
-          label="Greeting (H1)"
-          name="GREETING"
-          value={getBlockValue("GREETING").replace(/\n/g, " ").trim()}
-          onChange={(v) => handleFenceChange("GREETING", v, "text")}
-          max={120}
-        />
-        <FieldText
-          label="Sign-off Name"
-          name="SIGNOFF"
-          value={getBlockValue("SIGNOFF").replace(/\n/g, " ").trim()}
-          onChange={(v) => handleFenceChange("SIGNOFF", v, "text")}
-          max={120}
-        />
-
-        {/* Dynamic body sections */}
-        <div style={{ marginTop: 16, marginBottom: 8, fontWeight: 700 }}>
-          Body Sections (drag to reorder)
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <button onClick={addParagraph}>+ Add Paragraph</button>
-          <button onClick={addCTA}>+ Add CTA</button>
-        </div>
-
-        <div>
-          {sections.map((s) => (
-            <div
-              key={s.id}
-              draggable
-              onDragStart={onDragStart(s.id)}
-              onDragOver={onDragOver(s.id)}
-              onDrop={onDrop(s.id)}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                padding: 10,
-                marginBottom: 10,
-                background: "#fff",
-              }}
-              title="Drag to reorder"
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <strong>{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</strong>
-                <button onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
-              </div>
-
-              {s.type === "paragraph" ? (
-                <div>
-                  <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>
-                    Paragraph text (allows: &lt;a&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;br /&gt;)
-                  </label>
-                  <textarea
-                    value={s.content}
-                    rows={3}
-                    onChange={(e) => updateSection(s.id, { content: e.target.value })}
-                    style={{ width: "95%", height: 100, padding: 8, fontFamily: "inherit" }}
-                  />
-                </div>
-              ) : (
-                <div style={{ display: "block", gap: 8 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Button text</label>
-                    <input
-                      type="text"
-                      value={s.label}
-                      onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                      style={{ width: "95%", padding: 8 }}
-                    />
-                  </div><br />
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Button URL</label>
-                    <input
-                      type="text"
-                      value={s.href}
-                      onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                      style={{ width: "95%", padding: 8 }}
-                      placeholder="https://…"
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Brand */}
+            <div className="row">
+              <div className="label">Brand</div>
+              <select
+                className="select"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                style={{ width: "50%" }}
+              >
+                <option value="myclub">My Club</option>
+                <option value="decathlon">Decathlon Club</option>
+              </select>
+              <div className="help">Automatically fills HEADER and FOOTER.</div>
             </div>
-          ))}
+
+            {/* Fixed fields */}
+            <FieldText
+              label="Snippet Text"
+              name="SNIPPET"
+              value={getBlockValue("SNIPPET").replace(/\n/g, " ").trim()}
+              onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
+              max={80}
+            />
+            <FieldText
+              label="Greeting (H1)"
+              name="GREETING"
+              value={getBlockValue("GREETING").replace(/\n/g, " ").trim()}
+              onChange={(v) => handleFenceChange("GREETING", v, "text")}
+              max={120}
+            />
+            <FieldText
+              label="Sign-off Name"
+              name="SIGNOFF"
+              value={getBlockValue("SIGNOFF").replace(/\n/g, " ").trim()}
+              onChange={(v) => handleFenceChange("SIGNOFF", v, "text")}
+              max={120}
+            />
+
+            <div className="separator" />
+
+            {/* Dynamic body sections */}
+            <div className="row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="label">Body Sections <span className="badge">drag to reorder</span></div>
+              <div className="stack">
+                <button className="btn" onClick={addParagraph}>＋ Add Paragraph</button>
+                <button className="btn" onClick={addCTA}>＋ Add CTA</button>
+              </div>
+            </div>
+
+            <div>
+              {sections.map((s) => (
+                <div
+                  key={s.id}
+                  className="card"
+                  draggable
+                  onDragStart={onDragStart(s.id)}
+                  onDragOver={onDragOver(s.id)}
+                  onDrop={onDrop(s.id)}
+                  title="Drag to reorder"
+                >
+                  <div className="head">
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span className="drag">☰</span>
+                      <span className="badge">{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</span>
+                    </div>
+                    <button className="btn" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
+                  </div>
+
+                  {s.type === "paragraph" ? (
+                    <div>
+                      <div className="help" style={{ marginBottom: 6 }}>
+                        Paragraph text (allows: &lt;a&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;br /&gt;)
+                      </div>
+                      <textarea
+                        className="input"
+                        value={s.content}
+                        rows={4}
+                        onChange={(e) => updateSection(s.id, { content: e.target.value })}
+                        style={{ width: "95%", fontFamily: "inherit" }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: "block", gap: 8 }}>
+                      <div>
+                        <div className="label">Button text</div>
+                        <input
+                          className="input"
+                          type="text"
+                          value={s.label}
+                          onChange={(e) => updateSection(s.id, { label: e.target.value })}
+                          style={{ width: "95%" }}
+                        />
+                      </div>
+                      <div>
+                        <div className="label">Button URL</div>
+                        <input
+                          className="input"
+                          type="text"
+                          value={s.href}
+                          onChange={(e) => updateSection(s.id, { href: e.target.value })}
+                          style={{ width: "95%" }}
+                          placeholder="https://…"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="separator" />
+
+            {/* Actions */}
+            <div className="stack">
+              <button className="btn primary" onClick={exportHtml}>⬇ Export HTML</button>
+              <button className="btn good" onClick={exportJSON}>⬇ Export JSON</button>
+
+              <label className="btn" style={{ cursor: "pointer" }}>
+                ⬆ Import JSON
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) importJSON(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+
+          </div>
         </div>
 
-        <button onClick={exportHtml} style={{ marginTop: 8, padding: "10px 12px" }}>
-          Export HTML
-        </button>
-      </div>
-
-      {/* Preview */}
-      <div style={{ border: "1px solid #ddd", background: "#fff" }}>
-        <div style={{ padding: 8, borderBottom: "1px solid #eee", fontSize: 12, color: "#555" }}>
-          Live Preview
+        {/* Right panel: Live preview */}
+        <div className="preview">
+          <div className="title">Live Preview</div>
+          <iframe title="preview" style={{ width: "100%", height: "150vh", border: "none" }} srcDoc={html} />
         </div>
-        <iframe
-          title="preview"
-          style={{ width: "100%", height: "150vh", border: "none" }}
-          srcDoc={html}
-        />
       </div>
-    </div>
+    </>
   );
 }
 
 /* ===================== Small components & utils ===================== */
 function FieldText({ label, name, value, onChange, max }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
-        {label} <small style={{ color: "#666" }}>({name})</small>
-      </label>
+    <div className="row">
+      <div className="label">
+        {label} <small className="k">({name})</small>
+      </div>
       <input
+        className="input"
         type="text"
         value={value}
         maxLength={max}
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: "95%", padding: 8 }}
+        style={{ width: "95%" }}
       />
-      {max ? (
-        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-          Max {max} characters
-        </div>
-      ) : null}
+      {max ? <div className="help">Max {max} characters</div> : null}
     </div>
   );
 }
