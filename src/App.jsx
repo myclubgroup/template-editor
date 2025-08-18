@@ -47,7 +47,7 @@ const baseTemplate = `
 <div style="word-wrap:break-word; word-break:break-word; font-family:Arial, Helvetica, sans-serif; font-size:14px">
 
   <div style="display:none; max-height:0; overflow:hidden; font-size:1px; line-height:1px; color:rgb(254, 254, 254)">
-    <!-- editable:start name="snippet_text" label="Snippet Text" type="text" max="80" -->
+    <!-- editable:start name="SNIPPET" label="Snippet Text" type="text" max="80" -->
     Thank you for your kit enquiry!
     <!-- editable:end -->
   </div>
@@ -78,7 +78,7 @@ const baseTemplate = `
               <p style="margin:32px 0 0 0; color:rgb(71, 85, 105)">
                 Best regards,<br>
                 <strong style="color:rgb(30, 41, 59)">
-                  <!-- editable:start name="SIGNOFF_NAME" label="Sign-off Name" type="text" max="120" -->
+                  <!-- editable:start name="SIGNOFF" label="Sign-off Name" type="text" max="120" -->
                   \${Leads.Lead Owner}
                   <!-- editable:end -->
                 </strong>
@@ -347,7 +347,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "500px 1fr", gap: 16, padding: 16 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "580px 1fr", gap: 16, padding: 16 }}>
       <div style={{ minWidth: 340 }}>
         <h2 style={{ marginTop: 0 }}>Email Editor</h2>
 
@@ -359,20 +359,20 @@ export default function App() {
           <select
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            style={{ width: "100%", padding: 8 }}
+            style={{ width: "50%", padding: 8 }}
           >
             <option value="myclub">My Club</option>
             <option value="decathlon">Decathlon Club</option>
-          </select>
+          </select><br />
           <small style={{ color: "#555" }}>Automatically fills HEADER and FOOTER.</small>
         </div>
 
         {/* Fixed fields */}
         <FieldText
           label="Snippet Text"
-          name="snippet_text"
-          value={getBlockValue("snippet_text").replace(/\n/g, " ").trim()}
-          onChange={(v) => handleFenceChange("snippet_text", v, "text")}
+          name="SNIPPET"
+          value={getBlockValue("SNIPPET").replace(/\n/g, " ").trim()}
+          onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
           max={80}
         />
         <FieldText
@@ -384,9 +384,9 @@ export default function App() {
         />
         <FieldText
           label="Sign-off Name"
-          name="SIGNOFF_NAME"
-          value={getBlockValue("SIGNOFF_NAME").replace(/\n/g, " ").trim()}
-          onChange={(v) => handleFenceChange("SIGNOFF_NAME", v, "text")}
+          name="SIGNOFF"
+          value={getBlockValue("SIGNOFF").replace(/\n/g, " ").trim()}
+          onChange={(v) => handleFenceChange("SIGNOFF", v, "text")}
           max={120}
         />
 
@@ -431,27 +431,27 @@ export default function App() {
                     value={s.content}
                     rows={3}
                     onChange={(e) => updateSection(s.id, { content: e.target.value })}
-                    style={{ width: "100%", padding: 8, fontFamily: "inherit" }}
+                    style={{ width: "95%", height: 100, padding: 8, fontFamily: "inherit" }}
                   />
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ display: "block", gap: 8 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Button text</label>
                     <input
                       type="text"
                       value={s.label}
                       onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                      style={{ width: "100%", padding: 8 }}
+                      style={{ width: "95%", padding: 8 }}
                     />
-                  </div>
+                  </div><br />
                   <div>
                     <label style={{ display: "block", fontSize: 12, color: "#555", marginBottom: 4 }}>Button URL</label>
                     <input
                       type="text"
                       value={s.href}
                       onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                      style={{ width: "100%", padding: 8 }}
+                      style={{ width: "95%", padding: 8 }}
                       placeholder="https://…"
                     />
                   </div>
@@ -473,7 +473,7 @@ export default function App() {
         </div>
         <iframe
           title="preview"
-          style={{ width: "80%", height: "90vh", border: "none" }}
+          style={{ width: "100%", height: "100vh", border: "none" }}
           srcDoc={html}
         />
       </div>
@@ -493,7 +493,7 @@ function FieldText({ label, name, value, onChange, max }) {
         value={value}
         maxLength={max}
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: 8 }}
+        style={{ width: "95%", padding: 8 }}
       />
       {max ? (
         <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
