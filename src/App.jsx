@@ -10,6 +10,11 @@ const brandBlocks = {
     FOOTER: `
 My Club Group and Decathlon My Club are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
 Decathlon is a registered trade mark of Decathlon SA and used under licence.
+<br/>
+<a href="https://myclubgroup.co.uk/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> | 
+<a href="https://myclubgroup.co.uk/terms-conditions/" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> | 
+<a href="https://myclubgroup.co.uk/getstarted/" target="_blank" rel="noopener noreferrer">Contact Us</a>
+
 `.trim(),
   },
   decathlon: {
@@ -20,6 +25,11 @@ Decathlon is a registered trade mark of Decathlon SA and used under licence.
     FOOTER: `
 Decathlon My Club and My Club Group are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
 Decathlon is a registered trade mark of Decathlon SA and used under licence.
+<br/>
+<a href="https://decathlonmyclub.co.uk/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> | 
+<a href="https://decathlonmyclub.co.uk/terms-and-conditions/" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> | 
+<a href="https://decathlonmyclub.co.uk/contact/" target="_blank" rel="noopener noreferrer">Contact Us</a>
+
 `.trim(),
   },
 };
