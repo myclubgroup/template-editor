@@ -194,8 +194,8 @@ const sectionHTML = {
   <tr>
     <td align="center" style="padding:8px 0 24px 0">
       <a class="btn" href="${href}" style="background:${safeColor(
-        color
-      )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
+    color
+  )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
         ${escapeText(label)}
       </a>
     </td>
@@ -226,24 +226,38 @@ body{background:#0b1220;}
   border-radius:10px;border:1px solid #27314f;
   padding:10px 12px;outline:none
 }
+.clear-link {border: none;background: transparent;color: #007bff;cursor: pointer;font-size: 12px;padding: 0;}
+.clear-link:hover {color: #d97706;text-decoration: underline;}
 .input:focus, .select:focus{box-shadow:0 0 0 2px rgba(102,126,234,.35);border-color:#3b49a1}
 .btn{display:inline-flex;gap:8px;align-items:center;cursor:pointer;transition:.15s ease;border-color:#2a3660}
-.btn:hover{background:#121a32}
-.btn.primary{background:linear-gradient(135deg, var(--brand), var(--brand2));border-color:transparent}
-.btn.good{background:linear-gradient(135deg,#10b981,#059669);border-color:transparent}
+.btn.primary{background:linear-gradient(135deg, var(--brand), var(--brand2));border-color:transparent;color:#fff}
+.btn.import{background:linear-gradient(135deg,#10b981,#059669);border-color:transparent;color:#fff;font-size:12px}
+.btn.export{background:linear-gradient(135deg,#6210b9,#334782);border-color:transparent;color:#fff;font-size:12px}
+.btn.remove{border-color:#7f1d1d}
+.btn.remove:hover{background:#b91c1c;color:#fff;border-color:#7f1d1d}
+.btn.add{border-color:#065f46}
+.btn.add:hover{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-color:transparent}
+.btn.info{background:linear-gradient(135deg,#60a5fa,#38bdf8);border-color:transparent;color:#0b1220}
+.btn.info:hover{background:linear-gradient(135deg,#93c5fd,#60a5fa);color:#0b1220}
 .stack{display:flex;gap:8px;flex-wrap:wrap}
 .card{border:1px solid #27314f;background:#0c1428;border-radius:12px;padding:10px}
 .card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .badge{font-size:12px;color:#b9c2d0;background:#111a31;border:1px solid #27314f;padding:2px 8px;border-radius:999px}
 .drag{cursor:grab;user-select:none}
 .preview{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
-.preview .title{padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;background:#f9fafb}
+.preview .title{font-size:12px;padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;background:#f9fafb}
 iframe{background:#fff}
 .separator{height:1px;background:#1d2640;margin:12px 0}
 small.k{color:#b9c2d0}
 .colorRow{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-top:8px}
 .colorRow input[type="color"]{width:44px;height:36px;border:none;background:transparent;padding:0;cursor:pointer}
 .colorRow .hex{display:flex;gap:8px;align-items:center}
+.pinnedExport{
+  position:absolute;
+  top:12px;
+  right:12px;
+}
+.panel{position:relative;} /* allow absolute positioning inside */
 
 /* Modal */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
@@ -453,7 +467,7 @@ export default function App() {
   };
 
   /* --------- Export HTML (modal + copy, strip comments) --------- */
-    const openHtmlModal = () => {
+  const openHtmlModal = () => {
     const stripped = html
       .replace(/<!--[\s\S]*?-->/g, "")   // strip all comments (including fences)
       .replace(/\n{3,}/g, "\n\n")
@@ -489,6 +503,9 @@ export default function App() {
         {/* Left panel: Editor */}
         <div className="panel">
           <h2>Email Editor</h2>
+          <div className="pinnedExport">
+            <button className="btn primary" onClick={openHtmlModal}>📋 Export HTML</button>
+          </div>
           <div className="panel-body">
 
             {/* Brand */}
@@ -503,7 +520,7 @@ export default function App() {
                 <option value="myclub">My Club</option>
                 <option value="decathlon">Decathlon Club</option>
               </select>
-              <div className="help">Automatically fills HEADER and FOOTER.</div>
+              <div className="help">Automatically updates HEADER and FOOTER.</div>
             </div>
 
             {/* Fixed fields */}
@@ -535,8 +552,8 @@ export default function App() {
             <div className="row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div className="label">Body Sections <span className="badge">drag to reorder</span></div>
               <div className="stack">
-                <button className="btn" onClick={addParagraph}>＋ Add Paragraph</button>
-                <button className="btn" onClick={addCTA}>＋ Add CTA</button>
+                <button className="btn add" onClick={addParagraph}>＋ Add Paragraph</button>
+                <button className="btn add" onClick={addCTA}>＋ Add CTA</button>
               </div>
             </div>
 
@@ -556,7 +573,8 @@ export default function App() {
                       <span className="drag">☰</span>
                       <span className="badge">{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</span>
                     </div>
-                    <button className="btn" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
+                    <button className="btn remove" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
+
                   </div>
 
                   {s.type === "paragraph" ? (
@@ -565,17 +583,25 @@ export default function App() {
                         Paragraph text (allows: &lt;a&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;br /&gt;)
                       </div>
                       <textarea
-                        className="input"
                         value={s.content}
-                        rows={4}
+                        rows={3}
                         onChange={(e) => updateSection(s.id, { content: e.target.value })}
-                        style={{ width: "95%", height: 90, fontFamily: "inherit" }}
+                        style={{ width: "95%", height: 100, padding: 8, fontFamily: "inherit" }}
                       />
+                      {s.content && (
+                        <button
+                          type="button"
+                          onClick={() => updateSection(s.id, { content: "" })}
+                          className="clear-link"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <>
                       {/* CTA fields stacked as block; inputs at 95% width */}
-                      <div style={{ display: "block" }}>
+                      <div style={{ display: "block", gap: 8 }}>
                         <div style={{ marginBottom: 8 }}>
                           <div className="label">Button text</div>
                           <input
@@ -585,6 +611,15 @@ export default function App() {
                             onChange={(e) => updateSection(s.id, { label: e.target.value })}
                             style={{ width: "95%" }}
                           />
+                          {s.label && (
+                            <button
+                              type="button"
+                              onClick={() => updateSection(s.id, { label: "" })}
+                              className="clear-link"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
                         <div>
                           <div className="label">Button URL</div>
@@ -596,6 +631,15 @@ export default function App() {
                             style={{ width: "95%" }}
                             placeholder="https://…"
                           />
+                          {s.href && (
+                            <button
+                              type="button"
+                              onClick={() => updateSection(s.id, { href: "" })}
+                              className="clear-link"
+                            >
+                              Clear
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -630,10 +674,7 @@ export default function App() {
 
             {/* Actions */}
             <div className="stack">
-              <button className="btn primary" onClick={openHtmlModal}>📋 Export HTML</button>
-              <button className="btn good" onClick={exportJSON}>⬇ Export JSON</button>
-
-              <label className="btn" style={{ cursor: "pointer" }}>
+              <label className="btn import" style={{ cursor: "pointer" }}>
                 ⬆ Import JSON
                 <input
                   ref={importInputRef}
@@ -647,6 +688,7 @@ export default function App() {
                   }}
                 />
               </label>
+              <button className="btn export" onClick={exportJSON}>⬇ Export JSON</button>
             </div>
 
           </div>
@@ -664,15 +706,15 @@ export default function App() {
         <div className="modal-backdrop" onClick={() => setShowHtmlModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <strong>Exported HTML (comments removed)</strong>
-              <button className="btn" onClick={() => setShowHtmlModal(false)}>✕ Close</button>
+              <strong>HTML</strong>
+              <button className="btn remove" onClick={() => setShowHtmlModal(false)}>✕ Close</button>
             </div>
             <div className="modal-body">
               <textarea readOnly value={exportedHtml} />
             </div>
             <div className="actions">
-              <button className="btn" onClick={copyHtmlToClipboard}>Copy to clipboard</button>
-              <button className="btn" onClick={downloadHtmlFile}>Download HTML</button>
+              <button className="btn info" onClick={copyHtmlToClipboard}>Copy to clipboard</button>
+              <button className="btn info" onClick={downloadHtmlFile}>Download HTML</button>
             </div>
           </div>
         </div>
@@ -683,20 +725,36 @@ export default function App() {
 
 /* ===================== Small components & utils ===================== */
 function FieldText({ label, name, value, onChange, max }) {
+  const clearField = () => onChange("");
+
   return (
-    <div className="row">
-      <div className="label">
-        {label} <small className="k">({name})</small>
+    <div style={{ marginBottom: 12, position: "relative" }}>
+      <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
+        {label} <small style={{ color: "#666" }}>({name})</small>
+      </label>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          type="text"
+          value={value}
+          maxLength={max}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ width: "95%", padding: 8 }}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={clearField}
+            className="clear-link"
+          >
+            Clear
+          </button>
+        )}
       </div>
-      <input
-        className="input"
-        type="text"
-        value={value}
-        maxLength={max}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: "95%" }}
-      />
-      {max ? <div className="help">Max {max} characters</div> : null}
+      {max ? (
+        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+          Max {max} characters
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 ## Instructions
 
-Clone the repo
+Clone the repo\
 Run `npm i`
 
-In the project directory, you can run:
+##
 
 ### `npm run dev`
 
