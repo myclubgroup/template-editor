@@ -25,7 +25,6 @@ Decathlon is a registered trade mark of Decathlon SA and used under licence.
 };
 
 /* ===================== Base template with fences ===================== */
-/* The dynamic body lives in the single fenced block: SECTIONS */
 const baseTemplate = `
 <html><head>
   <meta charset="utf-8">
@@ -185,20 +184,29 @@ function sanitizeParaHtml(s) {
 }
 
 /* ===================== Section builders ===================== */
+const DEFAULT_CTA_COLOR = "#667eea";
+
 const sectionHTML = {
   paragraph: (html) =>
     `<p style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</p>`,
-  cta: (label, href) => `
+  cta: (label, href, color) => `
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
     <td align="center" style="padding:8px 0 24px 0">
-      <a class="btn" href="${href}" style="background:rgb(102, 126, 234); border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
+      <a class="btn" href="${href}" style="background:${safeColor(
+        color
+      )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
         ${escapeText(label)}
       </a>
     </td>
   </tr>
 </table>`.trim(),
 };
+
+function safeColor(c) {
+  if (typeof c === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) return c;
+  return DEFAULT_CTA_COLOR;
+}
 
 /* ===================== Pretty CSS (no libs) ===================== */
 const editorCSS = `
@@ -233,12 +241,27 @@ body{background:#0b1220;}
 iframe{background:#fff}
 .separator{height:1px;background:#1d2640;margin:12px 0}
 small.k{color:#b9c2d0}
+.colorRow{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-top:8px}
+.colorRow input[type="color"]{width:44px;height:36px;border:none;background:transparent;padding:0;cursor:pointer}
+.colorRow .hex{display:flex;gap:8px;align-items:center}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{width:min(920px,92vw);max-height:86vh;background:#0e162c;border:1px solid #27314f;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;color:#e6ebf5}
+.modal .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #27314f;background:linear-gradient(135deg,#101729,#0d1424)}
+.modal .modal-body{padding:12px 14px}
+.modal textarea{width:100%;height:60vh;border:1px solid #27314f;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px;border-top:1px solid #27314f}
 `;
 
 /* ===================== Main App ===================== */
 export default function App() {
   const [brand, setBrand] = useState("myclub"); // 'myclub' | 'decathlon'
   const [html, setHtml] = useState(baseTemplate);
+
+  // Modal state for raw HTML
+  const [showHtmlModal, setShowHtmlModal] = useState(false);
+  const [exportedHtml, setExportedHtml] = useState("");
 
   const [sections, setSections] = useState([
     {
@@ -259,6 +282,7 @@ export default function App() {
       label: "CLICK HERE TO ADD MORE INFORMATION",
       href:
         "https://survey.myclubgroup.co.uk/zs/BBajDY?fromservice=ZCRM&zs_leads=${Leads.Lead Id}",
+      color: DEFAULT_CTA_COLOR,
     },
     {
       id: cryptoRandom(),
@@ -308,7 +332,8 @@ export default function App() {
         if (s.type === "cta") {
           const label = s.label || "Click here";
           const href = s.href || "https://example.com";
-          return sectionHTML.cta(label, href);
+          const color = s.color || DEFAULT_CTA_COLOR;
+          return sectionHTML.cta(label, href, color);
         }
         return "";
       })
@@ -354,7 +379,13 @@ export default function App() {
   const addCTA = () =>
     setSections((s) => [
       ...s,
-      { id: cryptoRandom(), type: "cta", label: "Click here", href: "https://example.com" },
+      {
+        id: cryptoRandom(),
+        type: "cta",
+        label: "Click here",
+        href: "https://example.com",
+        color: DEFAULT_CTA_COLOR,
+      },
     ]);
   const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
   const updateSection = (id, patch) =>
@@ -363,7 +394,7 @@ export default function App() {
   /* --------- Import / Export JSON --------- */
   const exportJSON = () => {
     const json = {
-      version: 1,
+      version: 2,
       brand,
       fields: {
         SNIPPET: getBlockValue("SNIPPET"),
@@ -389,23 +420,20 @@ export default function App() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
-        // brand
         if (data.brand && (data.brand === "myclub" || data.brand === "decathlon")) {
           setBrand(data.brand);
         }
-        // sections
         if (Array.isArray(data.sections)) {
-          // Ensure IDs
           const fixed = data.sections.map((s) => ({
             id: s.id || cryptoRandom(),
             type: s.type === "cta" ? "cta" : "paragraph",
             content: s.type === "paragraph" ? (s.content || "") : undefined,
             label: s.type === "cta" ? (s.label || "Click here") : undefined,
             href: s.type === "cta" ? (s.href || "https://example.com") : undefined,
+            color: s.type === "cta" ? safeColor(s.color || DEFAULT_CTA_COLOR) : undefined,
           }));
           setSections(fixed);
         }
-        // fields
         const fields = data.fields || {};
         setHtml((prev) => {
           let h = prev;
@@ -424,8 +452,27 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const exportHtml = () => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  /* --------- Export HTML (modal + copy, strip comments) --------- */
+    const openHtmlModal = () => {
+    const stripped = html
+      .replace(/<!--[\s\S]*?-->/g, "")   // strip all comments (including fences)
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    setExportedHtml(stripped);
+    setShowHtmlModal(true);
+  };
+
+  const copyHtmlToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(exportedHtml);
+      alert("HTML copied to clipboard!");
+    } catch {
+      alert("Could not copy. Select all and copy manually.");
+    }
+  };
+
+  const downloadHtmlFile = () => {
+    const blob = new Blob([exportedHtml || ""], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -522,33 +569,58 @@ export default function App() {
                         value={s.content}
                         rows={4}
                         onChange={(e) => updateSection(s.id, { content: e.target.value })}
-                        style={{ width: "95%", fontFamily: "inherit" }}
+                        style={{ width: "95%", height: 90, fontFamily: "inherit" }}
                       />
                     </div>
                   ) : (
-                    <div style={{ display: "block", gap: 8 }}>
-                      <div>
-                        <div className="label">Button text</div>
-                        <input
-                          className="input"
-                          type="text"
-                          value={s.label}
-                          onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                          style={{ width: "95%" }}
-                        />
+                    <>
+                      {/* CTA fields stacked as block; inputs at 95% width */}
+                      <div style={{ display: "block" }}>
+                        <div style={{ marginBottom: 8 }}>
+                          <div className="label">Button text</div>
+                          <input
+                            className="input"
+                            type="text"
+                            value={s.label}
+                            onChange={(e) => updateSection(s.id, { label: e.target.value })}
+                            style={{ width: "95%" }}
+                          />
+                        </div>
+                        <div>
+                          <div className="label">Button URL</div>
+                          <input
+                            className="input"
+                            type="text"
+                            value={s.href}
+                            onChange={(e) => updateSection(s.id, { href: e.target.value })}
+                            style={{ width: "95%" }}
+                            placeholder="https://…"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <div className="label">Button URL</div>
-                        <input
-                          className="input"
-                          type="text"
-                          value={s.href}
-                          onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                          style={{ width: "95%" }}
-                          placeholder="https://…"
-                        />
+
+                      {/* CTA Color Picker */}
+                      <div className="colorRow">
+                        <div className="label">Button colour</div>
+                        <div className="hex">
+                          <input
+                            type="color"
+                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value })}
+                            aria-label="CTA colour"
+                          />
+                          <input
+                            className="input"
+                            type="text"
+                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                            placeholder="#667eea"
+                            style={{ width: 120 }}
+                          />
+                          <span className="help">Hex (#RRGGBB)</span>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               ))}
@@ -558,7 +630,7 @@ export default function App() {
 
             {/* Actions */}
             <div className="stack">
-              <button className="btn primary" onClick={exportHtml}>⬇ Export HTML</button>
+              <button className="btn primary" onClick={openHtmlModal}>📋 Export HTML</button>
               <button className="btn good" onClick={exportJSON}>⬇ Export JSON</button>
 
               <label className="btn" style={{ cursor: "pointer" }}>
@@ -586,6 +658,25 @@ export default function App() {
           <iframe title="preview" style={{ width: "100%", height: "150vh", border: "none" }} srcDoc={html} />
         </div>
       </div>
+
+      {/* Modal for raw HTML */}
+      {showHtmlModal && (
+        <div className="modal-backdrop" onClick={() => setShowHtmlModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <strong>Exported HTML (comments removed)</strong>
+              <button className="btn" onClick={() => setShowHtmlModal(false)}>✕ Close</button>
+            </div>
+            <div className="modal-body">
+              <textarea readOnly value={exportedHtml} />
+            </div>
+            <div className="actions">
+              <button className="btn" onClick={copyHtmlToClipboard}>Copy to clipboard</button>
+              <button className="btn" onClick={downloadHtmlFile}>Download HTML</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

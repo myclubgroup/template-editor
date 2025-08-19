@@ -1,17 +1,20 @@
-## Available Scripts
+## Instructions
+
+Clone the repo
+Run `npm i`
 
 In the project directory, you can run:
 
 ### `npm run dev`
 
 Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view in your browser.
+Open [http://localhost:5173/template-editor/](http://localhost:5173/template-editor/) to view in your browser.
 
 The page will reload when you make changes.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `dist` folder.\
 Your app is ready to be deployed!
 
 ### `npm run deploy`
