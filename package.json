@@ -1,6 +1,6 @@
 {
   "name": "template-editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "dependencies": {
     "@tailwindcss/cli": "^4.1.12",
@@ -14,6 +14,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm version patch --no-git-tag-version",
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "vite build",

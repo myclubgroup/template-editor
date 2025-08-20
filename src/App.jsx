@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 
+const build = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__ : null;
+
 /* ===================== Brand HTML blocks ===================== */
 const brandBlocks = {
   myclub: {
     HEADER: `
-<td align="center" style="padding:24px 32px; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(10, 26, 54) 100%)">
-  <img imgfilesize="4054" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=87972724af3582006b7c3e3104ee518703294fe114a5e654eb29439fef7fc12cc01bab2f9f213296ef943d3f42bf43616df27d9b85c54301cb3b6609123d80015d46c3cf8effbaae6690a928863d40363301ab2b56949a4b27fcacb6e6050574" align="middle">
+<td align="center" height="120" style="height:120px; padding:0; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(10, 26, 54) 100%)">
+  <img imgfilesize="4054" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=87972724af3582006b7c3e3104ee518703294fe114a5e654eb29439fef7fc12cc01bab2f9f213296ef943d3f42bf43616df27d9b85c54301cb3b6609123d80015d46c3cf8effbaae6690a928863d40363301ab2b56949a4b27fcacb6e6050574" alt="" style="max-height:100%; vertical-align:middle;" />
 </td>`.trim(),
     FOOTER: `
 My Club Group and Decathlon My Club are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
@@ -19,8 +21,8 @@ Decathlon is a registered trade mark of Decathlon SA and used under licence.
   },
   decathlon: {
     HEADER: `
-<td align="center" style="padding:24px 32px; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(54, 67, 186) 100%)">
-  <img imgfilesize="4222" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=16dd9ff341b5533854c3c0f4fb18f4f7fd77b29599b48e692b77e733cb65641f7c8549da1a3ea44ef2bd8b0c94186ed834a3ab3fd06e6c080b46f360737c67145053c285b5e16acc216ffdad9a8ef078140066b38edfd8339335623786c7a561" align="middle">
+<td align="center" height="120" style="height:120px; padding:0; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(54, 67, 186) 100%)">
+  <img imgfilesize="4222" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=16dd9ff341b5533854c3c0f4fb18f4f7fd77b29599b48e692b77e733cb65641f7c8549da1a3ea44ef2bd8b0c94186ed834a3ab3fd06e6c080b46f360737c67145053c285b5e16acc216ffdad9a8ef078140066b38edfd8339335623786c7a561" alt="" style="max-height:100%; vertical-align:middle;" />
 </td>`.trim(),
     FOOTER: `
 Decathlon My Club and My Club Group are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
@@ -56,9 +58,7 @@ const baseTemplate = `
 <div style="word-wrap:break-word; word-break:break-word; font-family:Arial, Helvetica, sans-serif; font-size:14px">
 
   <div style="display:none; max-height:0; overflow:hidden; font-size:1px; line-height:1px; color:rgb(254, 254, 254)">
-    <!-- editable:start name="SNIPPET" label="Snippet Text" type="text" max="80" -->
-    Thank you for your kit enquiry!
-    <!-- editable:end -->
+    <!-- editable:start name="SNIPPET" label="Snippet Text" type="text" max="80" -->Thank you for your kit enquiry!<!-- editable:end -->
   </div>
   
   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0; background:rgb(248, 250, 252)">
@@ -75,9 +75,7 @@ const baseTemplate = `
             <td class="p32" style="padding:32px; color:rgb(51, 65, 85); font-size:16px; line-height:1.5">
               
               <h1 style="margin:0 0 16px 0; font-size:18px; line-height:1.3; color:rgb(30, 41, 59); font-weight:700">
-                <!-- editable:start name="GREETING" label="Greeting (H1)" type="text" max="120" -->
-                Dear \${Leads.First Name},
-                <!-- editable:end -->
+                <!-- editable:start name="GREETING" label="Greeting (H1)" type="text" max="120" -->Dear \${Leads.First Name},<!-- editable:end -->
               </h1>
 
               <!-- editable:start name="SECTIONS" label="Body Sections" type="rich" -->
@@ -87,9 +85,7 @@ const baseTemplate = `
               <p style="margin:32px 0 0 0; color:rgb(71, 85, 105)">
                 Best regards,<br>
                 <strong style="color:rgb(30, 41, 59)">
-                  <!-- editable:start name="SIGNOFF" label="Sign-off Name" type="text" max="120" -->
-                  \${Leads.Lead Owner}
-                  <!-- editable:end -->
+                  <!-- editable:start name="SIGNOFF" label="Sign-off Name" type="text" max="120" -->\${Leads.Lead Owner}<!-- editable:end -->
                 </strong>
               </p>
             </td>
@@ -365,6 +361,16 @@ export default function App() {
     setHtml((prev) => replaceBlock(prev, "SECTIONS", `\n${bodyHtml}\n`));
   }, [sections]);
 
+  // For inline fence fields (SNIPPET, GREETING, SIGNOFF), remove only
+  // the padding newlines we insert around fences, but keep user spaces.
+  function getInlineFence(html, name, blocks) {
+    const body = (blocks.find((b) => b.name === name)?.body ?? "");
+    // remove exactly one leading and one trailing newline
+    const unpadded = body.replace(/^\n/, "").replace(/\n$/, "");
+    // inline fields show newlines as spaces, but DO NOT trim ends
+    return unpadded.replace(/\n/g, " ");
+  }
+
   const handleFenceChange = (name, value, type) => {
     const safe = type === "text" ? escapeText(value) : value;
     setHtml((prev) => replaceBlock(prev, name, `\n${safe}\n`));
@@ -512,7 +518,14 @@ export default function App() {
       <div className="editor-wrap">
         {/* Left panel: Editor */}
         <div className="panel">
-          <h2>Email Editor</h2>
+          <h2 style={{ marginTop: 0, display: "flex", alignItems: "baseline", gap: 6 }}>
+            Email Editor
+            {typeof __BUILD_INFO__ !== "undefined" && (
+              <span style={{ fontSize: "8px", color: "#666" }}>
+                v{__BUILD_INFO__.buildNumber || __BUILD_INFO__.version}
+              </span>
+            )}
+          </h2>
           <div className="pinnedExport">
             <button className="btn primary" onClick={openHtmlModal}>📋 Export HTML</button>
           </div>
@@ -537,23 +550,23 @@ export default function App() {
             <FieldText
               label="Snippet Text"
               name="SNIPPET"
-              value={getBlockValue("SNIPPET").replace(/\n/g, " ").trim()}
+              value={getInlineFence(html, "SNIPPET", blocks)}
               onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
               max={80}
             />
             <FieldText
               label="Greeting (H1)"
               name="GREETING"
-              value={getBlockValue("GREETING").replace(/\n/g, " ").trim()}
+              value={getInlineFence(html, "GREETING", blocks)}
               onChange={(v) => handleFenceChange("GREETING", v, "text")}
-              max={120}
+              max={80}
             />
             <FieldText
               label="Sign-off Name"
               name="SIGNOFF"
-              value={getBlockValue("SIGNOFF").replace(/\n/g, " ").trim()}
+              value={getInlineFence(html, "SIGNOFF", blocks)}
               onChange={(v) => handleFenceChange("SIGNOFF", v, "text")}
-              max={120}
+              max={80}
             />
 
             <div className="separator" />
