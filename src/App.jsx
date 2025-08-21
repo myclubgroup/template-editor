@@ -1,5 +1,38 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 
+import ReactQuill from "react-quill-new";
+import 'react-quill-new/dist/quill.snow.css';
+
+// Optional: restrict to a brand palette (recommended for email)
+const COLOR_PALETTE = [
+  "#111827", // near-black
+  "#334155", // slate-700
+  "#667eea", // brand
+  "#0ea5e9", // accent blue
+  "#10b981", // green
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#6b7280", // gray
+  "#000000", // black
+];
+
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ color: COLOR_PALETTE }, { background: [] }], // add color & highlight
+    ['link'],
+    ['clean'],
+  ],
+};
+
+const quillFormats = [
+  'bold', 'italic', 'underline',
+  'list',
+  'color', 'background',  // <-- important
+  'link',
+];
+
 const build = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__ : null;
 
 /* ===================== Brand HTML blocks ===================== */
@@ -157,36 +190,146 @@ function escapeText(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// very small allowlist for paragraph rich text (a, br, strong, em)
-function sanitizeParaHtml(s) {
-  const div = document.createElement("div");
-  div.innerHTML = s;
-  const allowed = new Set(["a", "br", "strong", "em"]);
+// Sanitizer that also fixes Quill's bullet lists (<ol> -> <ul> when appropriate)
+function sanitizeParaHtml(html) {
+  const root = document.createElement("div");
+  root.innerHTML = html;
+
+  // --- PASS 1: Normalize list containers ---
+  // Convert any <ol> that contains ONLY bullet items to <ul>
+  const ols = Array.from(root.querySelectorAll("ol"));
+  ols.forEach((ol) => {
+    const lis = Array.from(ol.children).filter(
+      (c) => c.tagName && c.tagName.toLowerCase() === "li"
+    );
+    if (
+      lis.length > 0 &&
+      lis.every((li) => (li.getAttribute("data-list") || "") === "bullet")
+    ) {
+      const ul = document.createElement("ul");
+      // Move children over intact (we'll sanitize in pass 2)
+      while (ol.firstChild) ul.appendChild(ol.firstChild);
+      ol.replaceWith(ul);
+    }
+    // If mixed (some bullet, some ordered), we leave it as <ol> to avoid corrupting structure.
+  });
+
+  // --- PASS 2: Sanitize tags + attributes ---
+  const allowed = new Set([
+    "a", "br",
+    "strong", "b", "em", "i", "u",
+    "p", "ol", "ul", "li",
+    "span",            // <— NEW for color/highlight
+  ]);
+
+  // optional: enforce a brand palette only
+  const BRAND_COLORS = new Set([
+    "#111827","#334155","#667eea","#0ea5e9","#10b981","#f59e0b","#ef4444","#6b7280","#000000"
+  ]);
+
+  const styleOk = (prop, val) => {
+    const p = prop.trim().toLowerCase();
+    const v = val.trim().toLowerCase();
+
+    if (p !== "color" && p !== "background-color") return false;
+
+    // Accept hex (#rgb/#rrggbb) or rgb()/rgba()
+    const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v);
+    const rgb = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v);
+
+    // If you want to enforce only brand palette (recommended for email),
+    // turn this on by returning BRAND_COLORS.has(v) instead of (hex||rgb).
+    const allowedByFormat = hex || rgb;
+
+    // palette enforcement (toggle ON if desired)
+    // return BRAND_COLORS.has(v);
+
+    return allowedByFormat;
+  };
+
   (function walk(node) {
     [...node.childNodes].forEach((child) => {
-      if (child.nodeType === 1) {
-        const tag = child.tagName.toLowerCase();
-        if (!allowed.has(tag)) {
-          const text = document.createTextNode(child.textContent || "");
-          child.replaceWith(text);
-        } else {
-          if (tag === "a") {
-            const href = child.getAttribute("href") || "";
-            if (!/^(https?:|mailto:|tel:|#)/i.test(href)) {
-              child.removeAttribute("href");
-            }
-            [...child.attributes].forEach((a) => {
-              if (a.name.toLowerCase() !== "href") child.removeAttribute(a.name);
-            });
-          } else {
-            [...child.attributes].forEach((a) => child.removeAttribute(a.name));
-          }
-          walk(child);
-        }
+      if (child.nodeType !== 1) return;
+      let tag = child.tagName.toLowerCase();
+
+      if (!allowed.has(tag)) {
+        const text = document.createTextNode(child.textContent || "");
+        child.replaceWith(text);
+        return;
       }
+
+      // normalize <b>/<i> to semantic tags
+      if (tag === "b" || tag === "i") {
+        const replacement = document.createElement(tag === "b" ? "strong" : "em");
+        replacement.innerHTML = child.innerHTML;
+        child.replaceWith(replacement);
+        walk(replacement);
+        return;
+      }
+
+      if (tag === "a") {
+        const href = child.getAttribute("href") || "";
+        if (!/^(https?:|mailto:|tel:|#)/i.test(href)) {
+          child.removeAttribute("href");
+        } else {
+          child.setAttribute("href", href);
+        }
+        [...child.attributes].forEach((a) => {
+          if (a.name.toLowerCase() !== "href") child.removeAttribute(a.name);
+        });
+        walk(child);
+        return;
+      }
+
+      // Lists: keep structure, strip classes; preserve indent via margin-left
+      if (tag === "li") {
+        const cls = child.getAttribute("class") || "";
+        const m = cls.match(/ql-indent-(\d+)/);
+        const level = m ? Math.min(8, parseInt(m[1], 10) || 0) : 0;
+        while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
+        if (level > 0) child.setAttribute("style", `margin-left:${level * 20}px`);
+        walk(child);
+        return;
+      }
+
+      // NEW: spans for color/background — keep only allowed color styles
+      if (tag === "span") {
+        // rebuild a minimal style string with just color/background-color
+        const styleAttr = child.getAttribute("style") || "";
+        const styles = styleAttr.split(";").map(s => s.trim()).filter(Boolean);
+        const kept = [];
+        styles.forEach(pair => {
+          const idx = pair.indexOf(":");
+          if (idx === -1) return;
+          const prop = pair.slice(0, idx);
+          const val  = pair.slice(idx + 1);
+          if (styleOk(prop, val)) kept.push(prop.trim().toLowerCase() + ":" + val.trim());
+        });
+
+        // drop all attributes, re-apply only the pruned style (if any)
+        while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
+        if (kept.length) child.setAttribute("style", kept.join(";"));
+
+        // if no valid styles left, we can either keep the span or unwrap it
+        if (!kept.length) {
+          // unwrap the span (safer/cleaner)
+          const frag = document.createDocumentFragment();
+          while (child.firstChild) frag.appendChild(child.firstChild);
+          child.replaceWith(frag);
+          return; // children already moved
+        }
+
+        walk(child);
+        return;
+      }
+
+      // default: p/ol/ul/strong/em/u/br — strip all attrs
+      [...child.attributes].forEach((a) => child.removeAttribute(a.name));
+      walk(child);
     });
-  })(div);
-  return div.innerHTML;
+  })(root);
+
+  return root.innerHTML;
 }
 
 /* ===================== Section builders ===================== */
@@ -194,7 +337,7 @@ const DEFAULT_CTA_COLOR = "#667eea";
 
 const sectionHTML = {
   paragraph: (html) =>
-    `<p style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</p>`,
+    `<div style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</div>`,
   cta: (label, href, color) => `
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
@@ -249,7 +392,6 @@ body{background:#0b1220;}
 .card{border:1px solid #27314f;background:#0c1428;border-radius:12px;padding:10px}
 .card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .badge{font-size:12px;color:#b9c2d0;background:#111a31;border:1px solid #27314f;padding:2px 8px;border-radius:999px}
-.drag{cursor:grab;user-select:none}
 .preview{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
 .preview .title{font-size:12px;padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;background:#f9fafb}
 iframe{background:#fff}
@@ -272,6 +414,154 @@ small.k{color:#b9c2d0}
 .modal .modal-body{padding:12px 14px}
 .modal textarea{width:100%;height:60vh;border:1px solid #27314f;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px;border-top:1px solid #27314f}
+
+/* === Quill editor area override === */
+.ql-container.ql-snow {
+  background: #ffffff;   /* white background */
+  color: #111827;        /* slate-900 text */
+  border-color: #334155; /* keep border consistent */
+}
+
+.ql-editor {
+  min-height: 120px;     /* keep space for typing */
+  color: #111827;        /* text color */
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9ca3af;        /* placeholder in gray */
+  font-style: normal;
+}
+
+.ql-toolbar.ql-snow {
+  background: #0b1224;           /* slightly darker bar */
+  border-color: #334155;
+}
+
+/* Icon strokes/fills in toolbar (bold, italic, etc.) */
+.ql-snow .ql-stroke {
+  stroke: #e2e8f0;               /* slate-200 */
+}
+.ql-snow .ql-fill,
+.ql-snow .ql-picker .ql-picker-label::before,
+.ql-snow .ql-picker .ql-picker-item::before {
+  fill: #e2e8f0;
+}
+
+.ql-snow .ql-picker-options {
+  background: #0b1224;
+  border-color: #334155;
+}
+
+/* Picker text + labels */
+.ql-snow .ql-picker,
+.ql-snow .ql-picker-options .ql-picker-item,
+.ql-snow .ql-picker-label {
+  color: #e2e8f0;
+}
+
+/* Hover/active states */
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:focus .ql-stroke,
+.ql-snow .ql-toolbar .ql-picker-label:hover,
+.ql-snow .ql-toolbar .ql-picker-item:hover {
+  stroke: #ffffff;
+  color: #ffffff;
+}
+
+/* Disabled buttons look clearer but still muted */
+.ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #60a5fa;               /* blue-400 for active */
+}
+.ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke {
+  stroke: #cbd5e1;               /* slate-300 */
+}
+
+/* Links */
+.ql-editor a {
+  color: #93c5fd;                /* blue-300 */
+  text-decoration: underline;
+}
+
+/* Focus ring to improve visibility */
+.ql-container.ql-snow:focus-within,
+.ql-container.ql-snow:has(.ql-editor:focus) {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-color: #60a5fa;
+}
+
+/* Keep the card border visible against dark bg */
+.your-paragraph-card-class {
+  border: 1px solid #334155;
+  border-radius: 8px;
+}
+
+/* === Quill editor area rounded style === */
+.ql-container.ql-snow {
+  background: #ffffff;         /* white document look */
+  color: #111827;              /* dark text */
+  border: 1px solid #334155;   /* subtle border */
+  border-radius: 0 0 0.75rem 0.75rem; /* match card rounding (bottom corners) */
+  overflow: hidden;            /* clip inside corners */
+}
+
+.ql-toolbar.ql-snow {
+  border: 1px solid #334155;
+  border-bottom: none;
+  border-radius: 0.75rem 0.75rem 0 0; /* top corners rounded */
+  background: #0b1224;          /* dark toolbar */
+}
+
+/* Keep consistent border highlight on focus */
+.ql-container.ql-snow:focus-within {
+  outline: 2px solid #60a5fa;
+  outline-offset: 0;
+  border-color: #60a5fa;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Editor text */
+.ql-editor {
+  min-height: 120px;
+  padding: 12px 16px;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+.drag{cursor:grab;user-select:none;color:#e5e7eb}
+
+.drag-handle {
+  background: transparent;
+  border: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover  { background: rgba(255,255,255,0.06); }
+
+/* Prevent drag interactions inside Quill content */
+.ql-editor * {
+  -webkit-user-drag: none;
+}
+
+/* Add gap only below paragraph sections */
+.paragraph-section {
+  margin-bottom: 0.5rem; /* 8px gap */
+}
+
+/* Optional: remove gap after the last paragraph */
+.paragraph-section:last-child {
+  margin-bottom: 0;
+}
+
 `;
 
 /* ===================== Main App ===================== */
@@ -582,18 +872,26 @@ export default function App() {
 
             <div>
               {sections.map((s) => (
-                <div
-                  key={s.id}
-                  className="card"
-                  draggable
-                  onDragStart={onDragStart(s.id)}
-                  onDragOver={onDragOver(s.id)}
-                  onDrop={onDrop(s.id)}
-                  title="Drag to reorder"
-                >
+  <div
+    key={s.id}
+    className="card paragraph-section"
+    onDragOver={onDragOver(s.id)}
+    onDrop={onDrop(s.id)}
+    title="Drag to reorder"
+  >
                   <div className="head">
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <span className="drag">☰</span>
+        {/* Hamburger is now the ONLY drag handle */}
+        <button
+          className="drag drag-handle"
+          draggable
+          onDragStart={onDragStart(s.id)}
+          onDragEnd={() => (draggingId.current = null)}
+          aria-label="Drag section"
+          type="button"
+        >
+          ☰
+        </button>
                       <span className="badge">{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</span>
                     </div>
                     <button className="btn remove" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
@@ -602,15 +900,16 @@ export default function App() {
 
                   {s.type === "paragraph" ? (
                     <div>
-                      <div className="help" style={{ marginBottom: 6 }}>
-                        Paragraph text (allows: &lt;a&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;br /&gt;)
-                      </div>
-                      <textarea
-                        value={s.content}
-                        rows={3}
-                        onChange={(e) => updateSection(s.id, { content: e.target.value })}
-                        style={{ width: "95%", height: 100, padding: 8, fontFamily: "inherit" }}
-                      />
+
+<ReactQuill
+  theme="snow"
+  value={s.content}
+  onChange={(val) => updateSection(s.id, { content: val })}
+  modules={quillModules}
+  formats={quillFormats}
+  scrollingContainer={null}
+/>
+
                       {s.content && (
                         <button
                           type="button"

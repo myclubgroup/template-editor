@@ -1,6 +1,7 @@
 {
   "name": "template-editor",
   "version": "0.1.3",
+  "description": "A React-based template editor with rich text editing capabilities.",
   "private": true,
   "dependencies": {
     "@tailwindcss/cli": "^4.1.12",
