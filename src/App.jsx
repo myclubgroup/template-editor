@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import ReactQuill from "react-quill-new";
-import 'react-quill-new/dist/quill.snow.css';
-
-const build = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__ : null;
+import "react-quill-new/dist/quill.snow.css";
+import "./editor.css";
 
 // Optional: restrict to a brand palette (recommended for email)
 const COLOR_PALETTE = [
@@ -19,28 +18,28 @@ const COLOR_PALETTE = [
 
 const quillModules = {
   toolbar: [
-    ['bold', 'italic', 'underline'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
+    ["bold", "italic", "underline"],
+    [{ list: "ordered" }, { list: "bullet" }],
     [{ color: COLOR_PALETTE }, { background: [] }], // add color & highlight
-    ['link'],
-    ['clean'],
+    ["link"],
+    ["clean"],
   ],
 };
 
 const quillFormats = [
-  'bold', 'italic', 'underline',
-  'list',
-  'color', 'background',  // <-- important
-  'link',
+  "bold",
+  "italic",
+  "underline",
+  "list",
+  "color",
+  "background", // <-- important
+  "link",
 ];
 
 const quillMiniModules = {
-  toolbar: [
-    ['bold', 'italic'],
-    ['clean'],
-  ],
+  toolbar: [["bold", "italic"], ["clean"]],
 };
-const quillMiniFormats = ['bold', 'italic'];
+const quillMiniFormats = ["bold", "italic"];
 
 // ---- Mail-merge tags grouped by module ----
 const MERGE_GROUPS = [
@@ -54,9 +53,7 @@ const MERGE_GROUPS = [
   },
   {
     group: "Contacts",
-    items: [
-      { label: "First Name", value: "${Contacts.First Name}" },
-    ],
+    items: [{ label: "First Name", value: "${Contacts.First Name}" }],
   },
   {
     group: "Deals",
@@ -71,15 +68,11 @@ const MERGE_GROUPS = [
   },
   {
     group: "Cases",
-    items: [
-      { label: "Case Owner", value: "${Cases.Case Owner}" },
-    ],
+    items: [{ label: "Case Owner", value: "${Cases.Case Owner}" }],
   },
   {
     group: "General",
-    items: [
-      { label: "User Signature", value: "${userSignature}" },
-    ],
+    items: [{ label: "User Signature", value: "${userSignature}" }],
   },
 ];
 
@@ -87,29 +80,13 @@ const MERGE_GROUPS = [
 const filterGroups = (q) => {
   const query = (q || "").trim().toLowerCase();
   if (!query) return MERGE_GROUPS;
-  return MERGE_GROUPS.map(g => ({
+  return MERGE_GROUPS.map((g) => ({
     group: g.group,
     items: g.items.filter(
-      t => t.label.toLowerCase().includes(query) || t.value.toLowerCase().includes(query)
+      (t) => t.label.toLowerCase().includes(query) || t.value.toLowerCase().includes(query),
     ),
-  })).filter(g => g.items.length);
+  })).filter((g) => g.items.length);
 };
-
-// ---- Mail-merge tags (label shown / value inserted) ----
-const MERGE_TAGS = [
-  { label: "Leads • Lead Owner", value: "${Leads.Lead Owner}" },
-  { label: "Leads • First Name", value: "${Leads.First Name}" },
-  { label: "Leads • Last Name", value: "${Leads.Last Name}" },
-  { label: "Contacts • First Name", value: "${Contacts.First Name}" },
-  { label: "Deals • Deal Owner", value: "${Deals.Deal Owner}" },
-  { label: "Deals • Club Name", value: "${Deals.Club Name}" },
-  { label: "Deals • Deal Name", value: "${Deals.Deal Name}" },
-  { label: "Deals • Unique Deal Reference", value: "${Deals.Unique Deal Reference}" },
-  { label: "Deals • Invoice Number", value: "${Deals.Invoice Number}" },
-  { label: "Deals • Delivery Contact Name", value: "${Deals.Delivery Contact Name}" },
-  { label: "Cases • Case Owner", value: "${Cases.Case Owner}" },
-  { label: "User Signature", value: "${userSignature}" },
-];
 
 /* ===================== Brand HTML blocks ===================== */
 const brandBlocks = {
@@ -220,8 +197,7 @@ const baseTemplate = `
 `.trim();
 
 /* ===================== Helpers: fences + sanitize ===================== */
-const FENCE_RE =
-  /<!--\s*editable:start([\s\S]*?)-->([\s\S]*?)<!--\s*editable:end\s*-->/g;
+const FENCE_RE = /<!--\s*editable:start([\s\S]*?)-->([\s\S]*?)<!--\s*editable:end\s*-->/g;
 
 function parseAttrs(raw) {
   const out = {};
@@ -255,7 +231,7 @@ function getBlocks(html) {
 function replaceBlock(html, name, newBody) {
   const re = new RegExp(
     `<!--\\s*editable:start([^>]*name="${name}"[^>]*)-->([\\s\\S]*?)<!--\\s*editable:end\\s*-->`,
-    "m"
+    "m",
   );
   return html.replace(re, (_all, attrs) => {
     return `<!-- editable:start${attrs}-->${newBody}<!-- editable:end -->`;
@@ -269,10 +245,10 @@ function escapeText(s) {
 // Inline-only sanitizer for GREETING and SIGNOFF (bold/italic, links, <br>).
 // Unwraps block tags like <p>/<div>, strips attributes, preserves safe <a href>.
 function sanitizeInlineHtml(html) {
-  const root = document.createElement('div');
+  const root = document.createElement("div");
   root.innerHTML = html;
 
-  const allowedInline = new Set(['strong', 'em', 'u', 'a', 'br']);
+  const allowedInline = new Set(["strong", "em", "u", "a", "br"]);
 
   const unwrap = (el) => {
     const frag = document.createDocumentFragment();
@@ -287,7 +263,7 @@ function sanitizeInlineHtml(html) {
 
       // Allow only inline tags; unwrap common block/neutral wrappers
       if (!allowedInline.has(tag)) {
-        if (tag === 'p' || tag === 'div' || tag === 'span' || tag.startsWith('h')) {
+        if (tag === "p" || tag === "div" || tag === "span" || tag.startsWith("h")) {
           // drop attributes & unwrap
           while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
           walk(child);
@@ -295,17 +271,17 @@ function sanitizeInlineHtml(html) {
           return;
         }
         // Anything else becomes plain text
-        const text = document.createTextNode(child.textContent || '');
+        const text = document.createTextNode(child.textContent || "");
         child.replaceWith(text);
         return;
       }
 
-      if (tag === 'a') {
-        const href = child.getAttribute('href') || '';
-        if (!/^(https?:|mailto:|tel:|#)/i.test(href)) child.removeAttribute('href');
+      if (tag === "a") {
+        const href = child.getAttribute("href") || "";
+        if (!/^(https?:|mailto:|tel:|#)/i.test(href)) child.removeAttribute("href");
         // Strip everything except href
         [...child.attributes].forEach((a) => {
-          if (a.name.toLowerCase() !== 'href') child.removeAttribute(a.name);
+          if (a.name.toLowerCase() !== "href") child.removeAttribute(a.name);
         });
         walk(child);
         return;
@@ -330,12 +306,9 @@ function sanitizeParaHtml(html) {
   const ols = Array.from(root.querySelectorAll("ol"));
   ols.forEach((ol) => {
     const lis = Array.from(ol.children).filter(
-      (c) => c.tagName && c.tagName.toLowerCase() === "li"
+      (c) => c.tagName && c.tagName.toLowerCase() === "li",
     );
-    if (
-      lis.length > 0 &&
-      lis.every((li) => (li.getAttribute("data-list") || "") === "bullet")
-    ) {
+    if (lis.length > 0 && lis.every((li) => (li.getAttribute("data-list") || "") === "bullet")) {
       const ul = document.createElement("ul");
       // Move children over intact (we'll sanitize in pass 2)
       while (ol.firstChild) ul.appendChild(ol.firstChild);
@@ -346,15 +319,18 @@ function sanitizeParaHtml(html) {
 
   // --- PASS 2: Sanitize tags + attributes ---
   const allowed = new Set([
-    "a", "br",
-    "strong", "b", "em", "i", "u",
-    "p", "ol", "ul", "li",
-    "span",            // <— NEW for color/highlight
-  ]);
-
-  // optional: enforce a brand palette only
-  const BRAND_COLORS = new Set([
-    "#111827", "#334155", "#667eea", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#6b7280", "#000000"
+    "a",
+    "br",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "p",
+    "ol",
+    "ul",
+    "li",
+    "span", // <— NEW for color/highlight
   ]);
 
   const styleOk = (prop, val) => {
@@ -365,7 +341,8 @@ function sanitizeParaHtml(html) {
 
     // Accept hex (#rgb/#rrggbb) or rgb()/rgba()
     const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v);
-    const rgb = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v);
+    const rgb =
+      /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v);
 
     // If you want to enforce only brand palette (recommended for email),
     // turn this on by returning BRAND_COLORS.has(v) instead of (hex||rgb).
@@ -426,9 +403,12 @@ function sanitizeParaHtml(html) {
       if (tag === "span") {
         // rebuild a minimal style string with just color/background-color
         const styleAttr = child.getAttribute("style") || "";
-        const styles = styleAttr.split(";").map(s => s.trim()).filter(Boolean);
+        const styles = styleAttr
+          .split(";")
+          .map((s) => s.trim())
+          .filter(Boolean);
         const kept = [];
-        styles.forEach(pair => {
+        styles.forEach((pair) => {
           const idx = pair.indexOf(":");
           if (idx === -1) return;
           const prop = pair.slice(0, idx);
@@ -466,15 +446,15 @@ function sanitizeParaHtml(html) {
 const DEFAULT_CTA_COLOR = "#667eea";
 
 const sectionHTML = {
-  paragraph: (html) =>
-    `<div style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</div>`,
-  cta: (label, href, color) => `
+  paragraph: (html) => `<div style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</div>`,
+  cta: (label, href, color) =>
+    `
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
     <td align="center" style="padding:8px 0 24px 0">
       <a class="btn" href="${href}" style="background:${safeColor(
-    color
-  )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
+        color,
+      )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
         ${escapeText(label)}
       </a>
     </td>
@@ -488,233 +468,6 @@ function safeColor(c) {
 }
 
 /* ===================== Pretty CSS (no libs) ===================== */
-const editorCSS = `
-:root{
-  --bg:#0b1220; --card:#101729; --muted:#9aa4b2; --text:#e6ebf5; --brand:#667eea; --brand2:#3643ba; --ok:#16a34a;
-}
-body{background:#0b1220;}
-.editor-wrap{display:grid;grid-template-columns:560px 1fr;gap:16px;padding:16px}
-@media (max-width:1100px){.editor-wrap{grid-template-columns:1fr}}
-.panel{background:var(--card);border:1px solid #1d2640;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);color:var(--text)}
-.panel h2{margin:0;padding:14px 16px;border-bottom:1px solid #1d2640;background:linear-gradient(135deg, #101729, #0d1424)}
-.panel-body{padding:14px 16px}
-.label{font-weight:600;margin-bottom:6px;color:#d7def1}
-.help{font-size:12px;color:var(--muted)}
-.row{margin-bottom:12px}
-.input, .select, .btn{
-  border-radius:10px;border:1px solid #27314f;
-  padding:10px 12px;outline:none
-}
-.clear-link {border: none;background: transparent;color: #007bff;cursor: pointer;font-size: 12px;padding: 0;}
-.clear-link:hover {color: #d97706;text-decoration: underline;}
-.input:focus, .select:focus{box-shadow:0 0 0 2px rgba(102,126,234,.35);border-color:#3b49a1}
-.btn{display:inline-flex;gap:8px;align-items:center;cursor:pointer;transition:.15s ease;border-color:#2a3660}
-.btn.primary{background:linear-gradient(135deg, var(--brand), var(--brand2));border-color:transparent;color:#fff}
-.btn.import{background:linear-gradient(135deg,#10b981,#059669);border-color:transparent;color:#fff;font-size:12px}
-.btn.export{background:linear-gradient(135deg,#6210b9,#334782);border-color:transparent;color:#fff;font-size:12px}
-.btn.remove{border-color:#7f1d1d}
-.btn.remove:hover{background:#b91c1c;color:#fff;border-color:#7f1d1d}
-.btn.add{border-color:#065f46}
-.btn.add:hover{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-color:transparent}
-.btn.info{background:linear-gradient(135deg,#60a5fa,#38bdf8);border-color:transparent;color:#0b1220}
-.btn.info:hover{background:linear-gradient(135deg,#93c5fd,#60a5fa);color:#0b1220}
-.stack{display:flex;gap:8px;flex-wrap:wrap}
-.card{border:1px solid #27314f;background:#0c1428;border-radius:12px;padding:10px}
-.card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.badge{font-size:12px;color:#b9c2d0;background:#111a31;border:1px solid #27314f;padding:2px 8px;border-radius:999px}
-.preview{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
-.preview .title{font-size:12px;padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#374151;background:#f9fafb}
-iframe{background:#fff}
-.separator{height:1px;background:#1d2640;margin:12px 0}
-small.k{color:#b9c2d0}
-.colorRow{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-top:8px}
-.colorRow input[type="color"]{width:44px;height:36px;border:none;background:transparent;padding:0;cursor:pointer}
-.colorRow .hex{display:flex;gap:8px;align-items:center}
-.pinnedExport{
-  position:absolute;
-  top:12px;
-  right:12px;
-}
-.panel{position:relative;} /* allow absolute positioning inside */
-
-/* Modal */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50}
-.modal{width:min(920px,92vw);max-height:86vh;background:#0e162c;border:1px solid #27314f;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;color:#e6ebf5}
-.modal .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #27314f;background:linear-gradient(135deg,#101729,#0d1424)}
-.modal .modal-body{padding:12px 14px}
-.modal textarea{width:100%;height:60vh;border:1px solid #27314f;border-radius:10px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
-.modal .actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 14px;border-top:1px solid #27314f}
-
-/* === Quill editor area override === */
-.ql-container.ql-snow {
-  background: #ffffff;   /* white background */
-  color: #111827;        /* slate-900 text */
-  border-color: #334155; /* keep border consistent */
-}
-.ql-editor {
-  min-height: 120px;     /* keep space for typing */
-  color: #111827;        /* text color */
-  font-size: 14px;
-  line-height: 1.5;
-}
-.ql-editor.ql-blank::before {
-  color: #9ca3af;        /* placeholder in gray */
-  font-style: normal;
-}
-.ql-toolbar.ql-snow {
-  background: #0b1224;           /* slightly darker bar */
-  border-color: #334155;
-}
-/* Icon strokes/fills in toolbar (bold, italic, etc.) */
-.ql-snow .ql-stroke {
-  stroke: #e2e8f0;               /* slate-200 */
-}
-.ql-snow .ql-fill,
-.ql-snow .ql-picker .ql-picker-label::before,
-.ql-snow .ql-picker .ql-picker-item::before {
-  fill: #e2e8f0;
-}
-.ql-snow .ql-picker-options {
-  background: #0b1224;
-  border-color: #334155;
-}
-/* Picker text + labels */
-.ql-snow .ql-picker,
-.ql-snow .ql-picker-options .ql-picker-item,
-.ql-snow .ql-picker-label {
-  color: #e2e8f0;
-}
-/* Hover/active states */
-.ql-snow .ql-toolbar button:hover .ql-stroke,
-.ql-snow .ql-toolbar button:focus .ql-stroke,
-.ql-snow .ql-toolbar .ql-picker-label:hover,
-.ql-snow .ql-toolbar .ql-picker-item:hover {
-  stroke: #ffffff;
-  color: #ffffff;
-}
-/* Disabled buttons look clearer but still muted */
-.ql-snow .ql-toolbar button.ql-active .ql-stroke {
-  stroke: #60a5fa;               /* blue-400 for active */
-}
-.ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke {
-  stroke: #cbd5e1;               /* slate-300 */
-}
-/* Links */
-.ql-editor a {
-  color: #93c5fd;                /* blue-300 */
-  text-decoration: underline;
-}
-/* Focus ring to improve visibility */
-.ql-container.ql-snow:focus-within,
-.ql-container.ql-snow:has(.ql-editor:focus) {
-  outline: 2px solid #60a5fa;
-  outline-offset: 2px;
-  border-color: #60a5fa;
-}
-/* Keep the card border visible against dark bg */
-.your-paragraph-card-class {
-  border: 1px solid #334155;
-  border-radius: 8px;
-}
-/* === Quill editor area rounded style === */
-.ql-container.ql-snow {
-  background: #ffffff;         /* white document look */
-  color: #111827;              /* dark text */
-  border: 1px solid #334155;   /* subtle border */
-  border-radius: 0 0 0.75rem 0.75rem; /* match card rounding (bottom corners) */
-  overflow: hidden;            /* clip inside corners */
-}
-.ql-toolbar.ql-snow {
-  border: 1px solid #334155;
-  border-bottom: none;
-  border-radius: 0.75rem 0.75rem 0 0; /* top corners rounded */
-  background: #0b1224;          /* dark toolbar */
-}
-/* Keep consistent border highlight on focus */
-.ql-container.ql-snow:focus-within {
-  outline: 2px solid #60a5fa;
-  outline-offset: 0;
-  border-color: #60a5fa;
-  border-radius: 0 0 0.75rem 0.75rem;
-}
-/* Editor text */
-.ql-editor {
-  min-height: 120px;
-  padding: 12px 16px;
-  color: #111827;
-  font-size: 14px;
-  line-height: 1.6;
-}
-.ql-editor.ql-blank::before {
-  color: #9ca3af;
-  font-style: normal;
-}
-.drag{cursor:grab;user-select:none;color:#e5e7eb}
-.drag-handle {
-  background: transparent;
-  border: 0;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-.drag-handle:active { cursor: grabbing; }
-.drag-handle:hover  { background: rgba(255,255,255,0.06); }
-/* Prevent drag interactions inside Quill content */
-.ql-editor * {
-  -webkit-user-drag: none;
-}
-/* --- Compact Quill for inline fields (Greeting/Signoff) --- */
-.inline-quill .ql-editor {
-  min-height: 40px;          /* similar to a single-line input */
-  max-height: 80px;          /* allow small wrap */
-  padding: 8px 12px;         /* match your input padding */
-  overflow-y: auto;
-}
-.inline-quill .ql-container.ql-snow {
-  border-radius: 0 0 0.5rem 0.5rem; /* slightly tighter corners */
-}
-.inline-quill .ql-toolbar.ql-snow {
-  border-radius: 0.5rem 0.5rem 0 0;
-  padding: 4px 6px;          /* optional: denser toolbar */
-}
-/* Add gap only below paragraph sections */
-.paragraph-section {
-  margin-bottom: 0.5rem; /* 8px gap */
-}
-/* Optional: remove gap after the last paragraph */
-.paragraph-section:last-child {
-  margin-bottom: 0;
-}
-/* --- Mail-merge tag menu --- */
-.tag-menu {
-  position: absolute;
-  z-index: 70;
-  min-width: 260px;
-  max-height: 240px;
-  overflow: auto;
-  background: #1f2937;              /* slate-800 */
-  border: 1px solid #334155;        /* slate-700 */
-  border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0,0,0,.45);
-}
-.tag-menu .item {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 10px; padding: 8px 10px; cursor: pointer;
-}
-.tag-menu .item:hover, .tag-menu .item.active {
-  background: #0b1224;              /* dark hover */
-}
-.tag-menu .label { color: #e5e7eb; font-size: 13px; }
-.tag-menu .val   { color: #93c5fd; font-size: 12px; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-/* --- Grouped menu styles --- */
-.tag-menu .group-title {
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #cbd5e1;                /* slate-300 */
-  border-top: 1px solid #334155; /* slate-700 */
-}
-.tag-menu .group:first-child .group-title { border-top: 0; }
-`;
 
 /* ===================== Main App ===================== */
 export default function App() {
@@ -742,15 +495,14 @@ export default function App() {
       id: cryptoRandom(),
       type: "cta",
       label: "CLICK HERE TO ADD MORE INFORMATION",
-      href:
-        "https://survey.myclubgroup.co.uk/zs/BBajDY?fromservice=ZCRM&zs_leads=${Leads.Lead Id}",
+      href: "https://survey.myclubgroup.co.uk/zs/BBajDY?fromservice=ZCRM&zs_leads=${Leads.Lead Id}",
       color: DEFAULT_CTA_COLOR,
     },
     {
       id: cryptoRandom(),
       type: "paragraph",
       content:
-        "We aim to follow up with you within the next day or so. If you have a preferred time for us to call, just let us know, and we’ll do our best to accommodate.",
+        "We aim to follow up with you within the next day or so. If you have a preferred time for us to call, just let us know, and we'll do our best to accommodate.",
     },
     {
       id: cryptoRandom(),
@@ -762,13 +514,12 @@ export default function App() {
       id: cryptoRandom(),
       type: "paragraph",
       content:
-        'In the meantime, if you’d like to speak with someone, feel free to call us at 01883 772929 (Monday-Friday, 9am-5pm) or email us at <a href="mailto:customerservices@myclub.group">customerservices@myclub.group</a>.',
+        'In the meantime, if you\'d like to speak with someone, feel free to call us at 01883 772929 (Monday-Friday, 9am-5pm) or email us at <a href="mailto:customerservices@myclub.group">customerservices@myclub.group</a>.',
     },
   ]);
 
   const blocks = useMemo(() => getBlocks(html), [html]);
-  const getBlockValue = (name) =>
-    (blocks.find((b) => b.name === name)?.body || "").trim();
+  const getBlockValue = (name) => (blocks.find((b) => b.name === name)?.body || "").trim();
 
   // Inject HEADER/FOOTER when brand changes
   useEffect(() => {
@@ -806,7 +557,7 @@ export default function App() {
   // For inline fence fields (SNIPPET, GREETING, SIGNOFF), remove only
   // the padding newlines we insert around fences, but keep user spaces.
   function getInlineFence(html, name, blocks) {
-    const body = (blocks.find((b) => b.name === name)?.body ?? "");
+    const body = blocks.find((b) => b.name === name)?.body ?? "";
     // remove exactly one leading and one trailing newline
     const unpadded = body.replace(/^\n/, "").replace(/\n$/, "");
     // inline fields show newlines as spaces, but DO NOT trim ends
@@ -819,7 +570,7 @@ export default function App() {
   };
 
   const getFenceBody = (name) =>
-    (blocks.find((b) => b.name === name)?.body ?? '').replace(/^\n/, '').replace(/\n$/, '');
+    (blocks.find((b) => b.name === name)?.body ?? "").replace(/^\n/, "").replace(/\n$/, "");
 
   /* --------- Drag & drop for sections --------- */
   const draggingId = useRef(null);
@@ -902,9 +653,9 @@ export default function App() {
           const fixed = data.sections.map((s) => ({
             id: s.id || cryptoRandom(),
             type: s.type === "cta" ? "cta" : "paragraph",
-            content: s.type === "paragraph" ? (s.content || "") : undefined,
-            label: s.type === "cta" ? (s.label || "Click here") : undefined,
-            href: s.type === "cta" ? (s.href || "https://example.com") : undefined,
+            content: s.type === "paragraph" ? s.content || "" : undefined,
+            label: s.type === "cta" ? s.label || "Click here" : undefined,
+            href: s.type === "cta" ? s.href || "https://example.com" : undefined,
             color: s.type === "cta" ? safeColor(s.color || DEFAULT_CTA_COLOR) : undefined,
           }));
           setSections(fixed);
@@ -930,7 +681,7 @@ export default function App() {
   /* --------- Export HTML (modal + copy, strip comments) --------- */
   const openHtmlModal = () => {
     const stripped = html
-      .replace(/<!--[\s\S]*?-->/g, "")   // strip all comments (including fences)
+      .replace(/<!--[\s\S]*?-->/g, "") // strip all comments (including fences)
       .replace(/\n{3,}/g, "\n\n")
       .trim();
     setExportedHtml(stripped);
@@ -958,8 +709,6 @@ export default function App() {
 
   return (
     <>
-      <style>{editorCSS}</style>
-
       <div className="editor-wrap">
         {/* Left panel: Editor */}
         <div className="panel">
@@ -972,10 +721,11 @@ export default function App() {
             )}
           </h2>
           <div className="pinnedExport">
-            <button className="btn primary" onClick={openHtmlModal}>📋 Export HTML</button>
+            <button className="btn primary" onClick={openHtmlModal}>
+              📋 Export HTML
+            </button>
           </div>
           <div className="panel-body">
-
             {/* Brand */}
             <div className="row">
               <div className="label">Brand</div>
@@ -999,459 +749,495 @@ export default function App() {
               onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
               max={80}
             />
-              <div style={{ marginBottom: 12 }}>
-                <div className="label">Greeting</div>
-                <div className="inline-quill">
-                  <ParagraphEditor
-                    value={getFenceBody("GREETING")}
-                    onChange={(val) => {
-                      const safe = sanitizeInlineHtml(val || "");
-                      setHtml((prev) => replaceBlock(prev, "GREETING", `\n${safe}\n`));
-                    }}
-                    modules={quillMiniModules}
-                    formats={quillMiniFormats}
-                  />
-                </div>
+            <div style={{ marginBottom: 12 }}>
+              <div className="label">Greeting</div>
+              <div className="inline-quill">
+                <ParagraphEditor
+                  value={getFenceBody("GREETING")}
+                  onChange={(val) => {
+                    const safe = sanitizeInlineHtml(val || "");
+                    setHtml((prev) => replaceBlock(prev, "GREETING", `\n${safe}\n`));
+                  }}
+                  modules={quillMiniModules}
+                  formats={quillMiniFormats}
+                />
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <div className="label">Sign-off Name</div>
-                <div className="inline-quill">
-                  <ParagraphEditor
-                    value={getFenceBody("SIGNOFF")}
-                    onChange={(val) => {
-                      const safe = sanitizeInlineHtml(val || "");
-                      setHtml((prev) => replaceBlock(prev, "SIGNOFF", `\n${safe}\n`));
-                    }}
-                    modules={quillMiniModules}
-                    formats={quillMiniFormats}
-                  />
-                </div>
-              </div>
-              <div className="separator" />
-
-              {/* Dynamic body sections */}
-              <div className="row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div className="label">Body Sections <span className="badge">drag to reorder</span></div>
-                <div className="stack">
-                  <button className="btn add" onClick={addParagraph}>＋ Add Paragraph</button>
-                  <button className="btn add" onClick={addCTA}>＋ Add CTA</button>
-                </div>
-              </div>
-
-              <div>
-                {sections.map((s) => (
-                  <div
-                    key={s.id}
-                    className="card paragraph-section"
-                    onDragOver={onDragOver(s.id)}
-                    onDrop={onDrop(s.id)}
-                    title="Drag to reorder"
-                  >
-                    <div className="head">
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {/* Hamburger is now the ONLY drag handle */}
-                        <button
-                          className="drag drag-handle"
-                          draggable
-                          onDragStart={onDragStart(s.id)}
-                          onDragEnd={() => (draggingId.current = null)}
-                          aria-label="Drag section"
-                          type="button"
-                        >
-                          ☰
-                        </button>
-                        <span className="badge">{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</span>
-                      </div>
-                      <button className="btn remove" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
-                    </div>
-                    {s.type === "paragraph" ? (
-                      <div>
-                        <ParagraphEditor
-                          value={s.content}
-                          onChange={(val) => updateSection(s.id, { content: val })}
-                          modules={quillModules}
-                          formats={quillFormats}
-                        />
-                        {s.content && (
-                          <button
-                            type="button"
-                            onClick={() => updateSection(s.id, { content: "" })}
-                            className="clear-link"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        {/* CTA fields stacked as block; inputs at 95% width */}
-                        <div style={{ display: "block", gap: 8 }}>
-                          <div style={{ marginBottom: 8 }}>
-                            <div className="label">Button text</div>
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.label}
-                              onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                              style={{ width: "95%" }}
-                            />
-                            {s.label && (
-                              <button
-                                type="button"
-                                onClick={() => updateSection(s.id, { label: "" })}
-                                className="clear-link"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                          <div>
-                            <div className="label">Button URL</div>
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.href}
-                              onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                              style={{ width: "95%" }}
-                              placeholder="https://…"
-                            />
-                            {s.href && (
-                              <button
-                                type="button"
-                                onClick={() => updateSection(s.id, { href: "" })}
-                                className="clear-link"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* CTA Color Picker */}
-                        <div className="colorRow">
-                          <div className="label">Button colour</div>
-                          <div className="hex">
-                            <input
-                              type="color"
-                              value={safeColor(s.color || DEFAULT_CTA_COLOR)}
-                              onChange={(e) => updateSection(s.id, { color: e.target.value })}
-                              aria-label="CTA colour"
-                            />
-                            <input
-                              className="input"
-                              type="text"
-                              value={safeColor(s.color || DEFAULT_CTA_COLOR)}
-                              onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
-                              placeholder="#667eea"
-                              style={{ width: 120 }}
-                            />
-                            <span className="help">Hex (#RRGGBB)</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="separator" />
-
-              {/* Actions */}
-              <div className="stack">
-                <label className="btn import" style={{ cursor: "pointer" }}>
-                  ⬆ Import JSON
-                  <input
-                    ref={importInputRef}
-                    type="file"
-                    accept="application/json"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) importJSON(f);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                <button className="btn export" onClick={exportJSON}>⬇ Export JSON</button>
-              </div>
-
             </div>
-          </div>
+            <div style={{ marginBottom: 12 }}>
+              <div className="label">Sign-off Name</div>
+              <div className="inline-quill">
+                <ParagraphEditor
+                  value={getFenceBody("SIGNOFF")}
+                  onChange={(val) => {
+                    const safe = sanitizeInlineHtml(val || "");
+                    setHtml((prev) => replaceBlock(prev, "SIGNOFF", `\n${safe}\n`));
+                  }}
+                  modules={quillMiniModules}
+                  formats={quillMiniFormats}
+                />
+              </div>
+            </div>
+            <div className="separator" />
 
-          {/* Right panel: Live preview */}
-          <div className="preview">
-            <div className="title">Live Preview</div>
-            <iframe title="preview" style={{ width: "100%", height: "150vh", border: "none" }} srcDoc={html} />
+            {/* Dynamic body sections */}
+            <div
+              className="row"
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            >
+              <div className="label">
+                Body Sections <span className="badge">drag to reorder</span>
+              </div>
+              <div className="stack">
+                <button className="btn add" onClick={addParagraph}>
+                  ＋ Add Paragraph
+                </button>
+                <button className="btn add" onClick={addCTA}>
+                  ＋ Add CTA
+                </button>
+              </div>
+            </div>
+
+            <div>
+              {sections.map((s) => (
+                <div
+                  key={s.id}
+                  className="card paragraph-section"
+                  onDragOver={onDragOver(s.id)}
+                  onDrop={onDrop(s.id)}
+                  title="Drag to reorder"
+                >
+                  <div className="head">
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {/* Hamburger is now the ONLY drag handle */}
+                      <button
+                        className="drag drag-handle"
+                        draggable
+                        onDragStart={onDragStart(s.id)}
+                        onDragEnd={() => (draggingId.current = null)}
+                        aria-label="Drag section"
+                        type="button"
+                      >
+                        ☰
+                      </button>
+                      <span className="badge">
+                        {s.type === "paragraph" ? "Paragraph" : "CTA Button"}
+                      </span>
+                    </div>
+                    <button
+                      className="btn remove"
+                      onClick={() => removeSection(s.id)}
+                      title="Remove"
+                    >
+                      − Remove
+                    </button>
+                  </div>
+                  {s.type === "paragraph" ? (
+                    <div>
+                      <ParagraphEditor
+                        value={s.content}
+                        onChange={(val) => updateSection(s.id, { content: val })}
+                        modules={quillModules}
+                        formats={quillFormats}
+                      />
+                      {s.content && (
+                        <button
+                          type="button"
+                          onClick={() => updateSection(s.id, { content: "" })}
+                          className="clear-link"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* CTA fields stacked as block; inputs at 95% width */}
+                      <div style={{ display: "block", gap: 8 }}>
+                        <div style={{ marginBottom: 8 }}>
+                          <div className="label">Button text</div>
+                          <input
+                            className="input"
+                            type="text"
+                            value={s.label}
+                            onChange={(e) => updateSection(s.id, { label: e.target.value })}
+                            style={{ width: "95%" }}
+                          />
+                          {s.label && (
+                            <button
+                              type="button"
+                              onClick={() => updateSection(s.id, { label: "" })}
+                              className="clear-link"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          <div className="label">Button URL</div>
+                          <input
+                            className="input"
+                            type="text"
+                            value={s.href}
+                            onChange={(e) => updateSection(s.id, { href: e.target.value })}
+                            style={{ width: "95%" }}
+                            placeholder="https://…"
+                          />
+                          {s.href && (
+                            <button
+                              type="button"
+                              onClick={() => updateSection(s.id, { href: "" })}
+                              className="clear-link"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CTA Color Picker */}
+                      <div className="colorRow">
+                        <div className="label">Button colour</div>
+                        <div className="hex">
+                          <input
+                            type="color"
+                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value })}
+                            aria-label="CTA colour"
+                          />
+                          <input
+                            className="input"
+                            type="text"
+                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                            placeholder="#667eea"
+                            style={{ width: 120 }}
+                          />
+                          <span className="help">Hex (#RRGGBB)</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="separator" />
+
+            {/* Actions */}
+            <div className="stack">
+              <label className="btn import" style={{ cursor: "pointer" }}>
+                ⬆ Import JSON
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) importJSON(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              <button className="btn export" onClick={exportJSON}>
+                ⬇ Export JSON
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Modal for raw HTML */}
-        {showHtmlModal && (
-          <div className="modal-backdrop" onClick={() => setShowHtmlModal(false)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-head">
-                <strong>HTML</strong>
-                <button className="btn remove" onClick={() => setShowHtmlModal(false)}>✕ Close</button>
-              </div>
-              <div className="modal-body">
-                <textarea readOnly value={exportedHtml} />
-              </div>
-              <div className="actions">
-                <button className="btn info" onClick={copyHtmlToClipboard}>Copy to clipboard</button>
-                <button className="btn info" onClick={downloadHtmlFile}>Download HTML</button>
-              </div>
+        {/* Right panel: Live preview */}
+        <div className="preview">
+          <div className="title">Live Preview</div>
+          <iframe
+            title="preview"
+            style={{ width: "100%", height: "150vh", border: "none" }}
+            srcDoc={html}
+          />
+        </div>
+      </div>
+
+      {/* Modal for raw HTML */}
+      {showHtmlModal && (
+        <div className="modal-backdrop" onClick={() => setShowHtmlModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <strong>HTML</strong>
+              <button className="btn remove" onClick={() => setShowHtmlModal(false)}>
+                ✕ Close
+              </button>
+            </div>
+            <div className="modal-body">
+              <textarea readOnly value={exportedHtml} />
+            </div>
+            <div className="actions">
+              <button className="btn info" onClick={copyHtmlToClipboard}>
+                Copy to clipboard
+              </button>
+              <button className="btn info" onClick={downloadHtmlFile}>
+                Download HTML
+              </button>
             </div>
           </div>
-        )}
-      </>
-      );
+        </div>
+      )}
+    </>
+  );
 }
 
-      /* ===================== Small components & utils ===================== */
-      function FieldText({label, name, value, onChange, max}) {
+/* ===================== Small components & utils ===================== */
+function FieldText({ label, name, value, onChange, max }) {
   const clearField = () => onChange("");
 
-      return (
-      <div style={{ marginBottom: 12, position: "relative" }}>
-        <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
-          {label} <small style={{ color: "#666" }}>({name})</small>
-        </label>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <MergeInput
-            value={value}
-            onChange={onChange}
-            maxLength={max}
-            placeholder=""
-          />
-          {value && (
-            <button
-              type="button"
-              onClick={clearField}
-              className="clear-link"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        {max ? (
-          <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-            Max {max} characters
-          </div>
-        ) : null}
+  return (
+    <div style={{ marginBottom: 12, position: "relative" }}>
+      <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
+        {label} <small style={{ color: "#666" }}>({name})</small>
+      </label>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <MergeInput value={value} onChange={onChange} maxLength={max} placeholder="" />
+        {value && (
+          <button type="button" onClick={clearField} className="clear-link">
+            Clear
+          </button>
+        )}
       </div>
-      );
+      {max ? (
+        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>Max {max} characters</div>
+      ) : null}
+    </div>
+  );
 }
 
-      function cryptoRandom() {
+function cryptoRandom() {
   if (typeof crypto !== "undefined" && crypto.getRandomValues) {
     const a = new Uint32Array(1);
-      crypto.getRandomValues(a);
-      return `id_${a[0].toString(16)}`;
+    crypto.getRandomValues(a);
+    return `id_${a[0].toString(16)}`;
   }
-      return `id_${Math.random().toString(16).slice(2)}`;
+  return `id_${Math.random().toString(16).slice(2)}`;
 }
 
-      function ParagraphEditor({value, onChange, modules, formats}) {
+function ParagraphEditor({ value, onChange, modules, formats }) {
   const quillRef = useRef(null);
-      const [open, setOpen] = useState(false);
-      const [query, setQuery] = useState("");
-      const [anchor, setAnchor] = useState({top: 0, left: 0 });
-      const [triggerIndex, setTriggerIndex] = useState(null);
-      const [active, setActive] = useState(0); // flat index across groups
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
+  const [triggerIndex, setTriggerIndex] = useState(null);
+  const [active, setActive] = useState(0); // flat index across groups
 
   const filteredGroups = useMemo(() => filterGroups(query), [query]);
-      const flat = useMemo(
-    () => filteredGroups.flatMap(g => g.items.map(it => ({...it, group: g.group }))),
-      [filteredGroups]
-      );
+  const flat = useMemo(
+    () => filteredGroups.flatMap((g) => g.items.map((it) => ({ ...it, group: g.group }))),
+    [filteredGroups],
+  );
 
-  useEffect(() => {setActive(0); }, [query]);
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
 
   useEffect(() => {
     const quill = quillRef.current?.getEditor?.();
-      if (!quill) return;
-      const root = quill.root;
+    if (!quill) return;
+    const root = quill.root;
 
     const handleKeyDown = (e) => {
       if (e.key === "#") {
         e.preventDefault();
-      const r = quill.getSelection(true);
-      if (!r) return;
-      quill.insertText(r.index, "#", "user");
-      quill.setSelection(r.index + 1, 0, "user");
-      const b = quill.getBounds(r.index + 1);
-      setAnchor({top: b.top + b.height + 6, left: b.left });
-      setTriggerIndex(r.index);
-      setQuery("");
-      setActive(0);
-      setOpen(true);
-      return;
+        const r = quill.getSelection(true);
+        if (!r) return;
+        quill.insertText(r.index, "#", "user");
+        quill.setSelection(r.index + 1, 0, "user");
+        const b = quill.getBounds(r.index + 1);
+        setAnchor({ top: b.top + b.height + 6, left: b.left });
+        setTriggerIndex(r.index);
+        setQuery("");
+        setActive(0);
+        setOpen(true);
+        return;
       }
 
       if (!open) return;
 
       if (e.key === "Escape") {
         e.preventDefault();
-      if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user");
-      setOpen(false);
-      return;
+        if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user");
+        setOpen(false);
+        return;
       }
       if (e.key === "Enter") {
         e.preventDefault();
-      if (!flat.length) return;
-      const pick = flat[Math.max(0, Math.min(active, flat.length - 1))];
-      if (triggerIndex != null) {
-        quill.deleteText(triggerIndex, 1, "user");
-      quill.insertText(triggerIndex, pick.value, "user");
-      quill.setSelection(triggerIndex + pick.value.length, 0, "user");
+        if (!flat.length) return;
+        const pick = flat[Math.max(0, Math.min(active, flat.length - 1))];
+        if (triggerIndex != null) {
+          quill.deleteText(triggerIndex, 1, "user");
+          quill.insertText(triggerIndex, pick.value, "user");
+          quill.setSelection(triggerIndex + pick.value.length, 0, "user");
         }
-      setOpen(false);
-      return;
+        setOpen(false);
+        return;
       }
-      if (e.key === "ArrowDown") {e.preventDefault(); setActive(i => Math.min(i + 1, Math.max(0, flat.length - 1))); return; }
-      if (e.key === "ArrowUp") {e.preventDefault(); setActive(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive((i) => Math.min(i + 1, Math.max(0, flat.length - 1)));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive((i) => Math.max(i - 1, 0));
+        return;
+      }
       if (e.key === "Backspace") {
         e.preventDefault();
-        if (query.length) setQuery(q => q.slice(0, -1));
-      else { if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user"); setOpen(false); }
-      return;
+        if (query.length) setQuery((q) => q.slice(0, -1));
+        else {
+          if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user");
+          setOpen(false);
+        }
+        return;
       }
       if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        setQuery(q => q + e.key);
-      const r = quill.getSelection(true);
-      const b = quill.getBounds(r?.index ?? 0);
-      setAnchor({top: b.top + b.height + 6, left: b.left });
-      return;
+        setQuery((q) => q + e.key);
+        const r = quill.getSelection(true);
+        const b = quill.getBounds(r?.index ?? 0);
+        setAnchor({ top: b.top + b.height + 6, left: b.left });
+        return;
       }
     };
 
-      root.addEventListener("keydown", handleKeyDown);
+    root.addEventListener("keydown", handleKeyDown);
     return () => root.removeEventListener("keydown", handleKeyDown);
   }, [open, query, active, flat]);
 
   useEffect(() => {
     const quill = quillRef.current?.getEditor?.();
-      if (!quill) return;
-    const onSel = (range) => { if (!range) setOpen(false); };
-      quill.on("selection-change", onSel);
+    if (!quill) return;
+    const onSel = (range) => {
+      if (!range) setOpen(false);
+    };
+    quill.on("selection-change", onSel);
     return () => quill.off?.("selection-change", onSel);
   }, []);
 
   const choose = (item) => {
     const quill = quillRef.current?.getEditor?.();
-      if (!quill || triggerIndex == null) return;
-      quill.deleteText(triggerIndex, 1, "user");
-      quill.insertText(triggerIndex, item.value, "user");
-      quill.setSelection(triggerIndex + item.value.length, 0, "user");
-      setOpen(false);
+    if (!quill || triggerIndex == null) return;
+    quill.deleteText(triggerIndex, 1, "user");
+    quill.insertText(triggerIndex, item.value, "user");
+    quill.setSelection(triggerIndex + item.value.length, 0, "user");
+    setOpen(false);
   };
 
-      return (
-      <div style={{ position: "relative" }}>
-        <ReactQuill
-          ref={quillRef}
-          theme="snow"
-          value={value}
-          onChange={onChange}
-          modules={modules}
-          formats={formats}
-          scrollingContainer={null}
-        />
-        {open && (
-          <div
-            className="tag-menu"
-            style={{ top: anchor.top, left: anchor.left, position: "absolute" }}
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            {flat.length ? (
-              (() => {
-                let ptr = 0; // running flat index for highlight / click
-                return filteredGroups.map(g => (
-                  <div className="group" key={g.group}>
-                    <div className="group-title">{g.group}</div>
-                    {g.items.map(it => {
-                      const idx = ptr++;
-                      return (
-                        <div
-                          key={g.group + ":" + it.value}
-                          className={`item ${idx === active ? "active" : ""}`}
-                          onMouseEnter={() => setActive(idx)}
-                          onClick={() => choose(it)}
-                        >
-                          <span className="label">{it.label}</span>
-                          <span className="val">{it.value}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ));
-              })()
-            ) : (
-              <div className="item"><span className="label">No matches…</span></div>
-            )}
-          </div>
-        )}
-      </div>
-      );
+  return (
+    <div style={{ position: "relative" }}>
+      <ReactQuill
+        ref={quillRef}
+        theme="snow"
+        value={value}
+        onChange={onChange}
+        modules={modules}
+        formats={formats}
+        scrollingContainer={null}
+      />
+      {open && (
+        <div
+          className="tag-menu"
+          style={{ top: anchor.top, left: anchor.left, position: "absolute" }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {flat.length ? (
+            (() => {
+              let ptr = 0; // running flat index for highlight / click
+              return filteredGroups.map((g) => (
+                <div className="group" key={g.group}>
+                  <div className="group-title">{g.group}</div>
+                  {g.items.map((it) => {
+                    const idx = ptr++;
+                    return (
+                      <div
+                        key={g.group + ":" + it.value}
+                        className={`item ${idx === active ? "active" : ""}`}
+                        onMouseEnter={() => setActive(idx)}
+                        onClick={() => choose(it)}
+                      >
+                        <span className="label">{it.label}</span>
+                        <span className="val">{it.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
+          ) : (
+            <div className="item">
+              <span className="label">No matches…</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-      function MergeInput({value, onChange, maxLength, placeholder}) {
+function MergeInput({ value, onChange, maxLength, placeholder }) {
   const inputRef = useRef(null);
-      const [open, setOpen] = useState(false);
-      const [query, setQuery] = useState("");
-      const [triggerIndex, setTriggerIndex] = useState(null);
-      const [active, setActive] = useState(0);
-      const [anchor, setAnchor] = useState({top: 0, left: 0 });
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [triggerIndex, setTriggerIndex] = useState(null);
+  const [active, setActive] = useState(0);
+  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
 
   const filteredGroups = useMemo(() => filterGroups(query), [query]);
-      const flat = useMemo(
-    () => filteredGroups.flatMap(g => g.items.map(it => ({...it, group: g.group }))),
-      [filteredGroups]
-      );
-  useEffect(() => {setActive(0); }, [query]);
+  const flat = useMemo(
+    () => filteredGroups.flatMap((g) => g.items.map((it) => ({ ...it, group: g.group }))),
+    [filteredGroups],
+  );
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
 
   const openMenuAtInput = (caretIndex) => {
     const el = inputRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      setAnchor({top: r.height + 6, left: 10 }); // simple anchor under the input
-      setTriggerIndex(caretIndex);
-      setQuery("");
-      setActive(0);
-      setOpen(true);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setAnchor({ top: r.height + 6, left: 10 }); // simple anchor under the input
+    setTriggerIndex(caretIndex);
+    setQuery("");
+    setActive(0);
+    setOpen(true);
   };
 
   const insertAt = (text, start, end, insert) => {
     const before = text.slice(0, start);
-      const after = text.slice(end);
-      let next = before + insert + after;
+    const after = text.slice(end);
+    let next = before + insert + after;
     if (typeof maxLength === "number" && next.length > maxLength) {
       const allowed = maxLength - (text.length - (end - start));
       next = before + insert.slice(0, Math.max(0, allowed)) + after;
     }
-      return next;
+    return next;
   };
 
   const choose = (item) => {
     const el = inputRef.current;
-      if (!el || triggerIndex == null) return;
-      const next = insertAt(value, triggerIndex, triggerIndex + 1, item.value);
-      const caret = Math.min(next.length, triggerIndex + item.value.length);
-      onChange(next);
-      setOpen(false);
+    if (!el || triggerIndex == null) return;
+    const next = insertAt(value, triggerIndex, triggerIndex + 1, item.value);
+    const caret = Math.min(next.length, triggerIndex + item.value.length);
+    onChange(next);
+    setOpen(false);
     requestAnimationFrame(() => {
-        inputRef.current?.focus();
+      inputRef.current?.focus();
       inputRef.current?.setSelectionRange(caret, caret);
     });
   };
 
   const onKeyDown = (e) => {
     const el = inputRef.current;
-      if (!el) return;
+    if (!el) return;
 
-      if (e.key === "#") {
-        e.preventDefault();
+    if (e.key === "#") {
+      e.preventDefault();
       const start = el.selectionStart ?? value.length;
       const end = el.selectionEnd ?? value.length;
       const next = insertAt(value, start, end, "#");
@@ -1463,40 +1249,48 @@ export default function App() {
       return;
     }
 
-      if (!open) return;
+    if (!open) return;
 
-      if (e.key === "Escape") {
-        e.preventDefault();
+    if (e.key === "Escape") {
+      e.preventDefault();
       if (triggerIndex != null) {
         const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
-      onChange(next);
+        onChange(next);
       }
       setOpen(false);
       return;
     }
-      if (e.key === "Enter") {
-        e.preventDefault();
+    if (e.key === "Enter") {
+      e.preventDefault();
       if (!flat.length) return;
       choose(flat[Math.max(0, Math.min(active, flat.length - 1))]);
       return;
     }
-      if (e.key === "ArrowDown") {e.preventDefault(); setActive(i => Math.min(i + 1, Math.max(0, flat.length - 1))); return; }
-      if (e.key === "ArrowUp") {e.preventDefault(); setActive(i => Math.max(i - 1, 0)); return; }
-      if (e.key === "Backspace") {
-        e.preventDefault();
-      if (query.length) setQuery(q => q.slice(0, -1));
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => Math.min(i + 1, Math.max(0, flat.length - 1)));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => Math.max(i - 1, 0));
+      return;
+    }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (query.length) setQuery((q) => q.slice(0, -1));
       else {
         if (triggerIndex != null) {
           const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
-      onChange(next);
+          onChange(next);
         }
-      setOpen(false);
+        setOpen(false);
       }
       return;
     }
-      if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-      setQuery(q => q + e.key);
+    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      setQuery((q) => q + e.key);
       return;
     }
   };
@@ -1506,57 +1300,59 @@ export default function App() {
       const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
       onChange(next);
     }
-      setOpen(false);
+    setOpen(false);
   };
 
-      return (
-      <div className="merge-input-wrap" style={{ position: "relative", flex: 1, minWidth: 0 }}>
-        <input
-          ref={inputRef}
-          className="input"
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          style={{ width: "95%", padding: 8, boxSizing: "border-box", display: "block" }}
-        />
-        {open && (
-          <div
-            className="tag-menu"
-            style={{ position: "absolute", top: anchor.top, left: anchor.left }}
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            {flat.length ? (
-              (() => {
-                let ptr = 0;
-                return filteredGroups.map(g => (
-                  <div className="group" key={g.group}>
-                    <div className="group-title">{g.group}</div>
-                    {g.items.map(it => {
-                      const idx = ptr++;
-                      return (
-                        <div
-                          key={g.group + ":" + it.value}
-                          className={`item ${idx === active ? "active" : ""}`}
-                          onMouseEnter={() => setActive(idx)}
-                          onClick={() => choose(it)}
-                        >
-                          <span className="label">{it.label}</span>
-                          <span className="val">{it.value}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ));
-              })()
-            ) : (
-              <div className="item"><span className="label">No matches…</span></div>
-            )}
-          </div>
-        )}
-      </div>
-      );
+  return (
+    <div className="merge-input-wrap" style={{ position: "relative", flex: 1, minWidth: 0 }}>
+      <input
+        ref={inputRef}
+        className="input"
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={onBlur}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        style={{ width: "95%", padding: 8, boxSizing: "border-box", display: "block" }}
+      />
+      {open && (
+        <div
+          className="tag-menu"
+          style={{ position: "absolute", top: anchor.top, left: anchor.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {flat.length ? (
+            (() => {
+              let ptr = 0;
+              return filteredGroups.map((g) => (
+                <div className="group" key={g.group}>
+                  <div className="group-title">{g.group}</div>
+                  {g.items.map((it) => {
+                    const idx = ptr++;
+                    return (
+                      <div
+                        key={g.group + ":" + it.value}
+                        className={`item ${idx === active ? "active" : ""}`}
+                        onMouseEnter={() => setActive(idx)}
+                        onClick={() => choose(it)}
+                      >
+                        <span className="label">{it.label}</span>
+                        <span className="val">{it.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
+          ) : (
+            <div className="item">
+              <span className="label">No matches…</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
