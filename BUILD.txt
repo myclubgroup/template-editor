@@ -1,3 +1,3 @@
-version=0.1.3
-commit=ada6e6f
-buildTime=2025-08-22T15:13:19.740Z
+version=0.1.4
+commit=218a971
+buildTime=2025-08-22T15:20:14.937Z
