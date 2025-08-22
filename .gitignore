@@ -36,5 +36,5 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# === Coverage ===
-coverage/
+# === Workflows ===
+workflows/
