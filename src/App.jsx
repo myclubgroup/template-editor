@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-
 import ReactQuill from "react-quill-new";
 import 'react-quill-new/dist/quill.snow.css';
+
+const build = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__ : null;
 
 // Optional: restrict to a brand palette (recommended for email)
 const COLOR_PALETTE = [
@@ -33,7 +34,74 @@ const quillFormats = [
   'link',
 ];
 
-const build = typeof __BUILD_INFO__ !== 'undefined' ? __BUILD_INFO__ : null;
+// ---- Mail-merge tags grouped by module ----
+const MERGE_GROUPS = [
+  {
+    group: "Leads",
+    items: [
+      { label: "Lead Owner",   value: "${Leads.Lead Owner}" },
+      { label: "First Name",   value: "${Leads.First Name}" },
+      { label: "Last Name",    value: "${Leads.Last Name}" },
+    ],
+  },
+  {
+    group: "Contacts",
+    items: [
+      { label: "First Name",   value: "${Contacts.First Name}" },
+    ],
+  },
+  {
+    group: "Deals",
+    items: [
+      { label: "Deal Owner",           value: "${Deals.Deal Owner}" },
+      { label: "Club Name",            value: "${Deals.Club Name}" },
+      { label: "Deal Name",            value: "${Deals.Deal Name}" },
+      { label: "Unique Deal Reference",value: "${Deals.Unique Deal Reference}" },
+      { label: "Invoice Number",       value: "${Deals.Invoice Number}" },
+      { label: "Delivery Contact Name",value: "${Deals.Delivery Contact Name}" },
+    ],
+  },
+  {
+    group: "Cases",
+    items: [
+      { label: "Case Owner",   value: "${Cases.Case Owner}" },
+    ],
+  },
+  {
+    group: "General",
+    items: [
+      { label: "User Signature", value: "${userSignature}" },
+    ],
+  },
+];
+
+// Utility: filter groups by query, keeping order and dropping empty groups
+const filterGroups = (q) => {
+  const query = (q || "").trim().toLowerCase();
+  if (!query) return MERGE_GROUPS;
+  return MERGE_GROUPS.map(g => ({
+    group: g.group,
+    items: g.items.filter(
+      t => t.label.toLowerCase().includes(query) || t.value.toLowerCase().includes(query)
+    ),
+  })).filter(g => g.items.length);
+};
+
+// ---- Mail-merge tags (label shown / value inserted) ----
+const MERGE_TAGS = [
+  { label: "Leads • Lead Owner", value: "${Leads.Lead Owner}" },
+  { label: "Leads • First Name", value: "${Leads.First Name}" },
+  { label: "Leads • Last Name", value: "${Leads.Last Name}" },
+  { label: "Contacts • First Name", value: "${Contacts.First Name}" },
+  { label: "Deals • Deal Owner", value: "${Deals.Deal Owner}" },
+  { label: "Deals • Club Name", value: "${Deals.Club Name}" },
+  { label: "Deals • Deal Name", value: "${Deals.Deal Name}" },
+  { label: "Deals • Unique Deal Reference", value: "${Deals.Unique Deal Reference}" },
+  { label: "Deals • Invoice Number", value: "${Deals.Invoice Number}" },
+  { label: "Deals • Delivery Contact Name", value: "${Deals.Delivery Contact Name}" },
+  { label: "Cases • Case Owner", value: "${Cases.Case Owner}" },
+  { label: "User Signature", value: "${userSignature}" },
+];
 
 /* ===================== Brand HTML blocks ===================== */
 const brandBlocks = {
@@ -224,7 +292,7 @@ function sanitizeParaHtml(html) {
 
   // optional: enforce a brand palette only
   const BRAND_COLORS = new Set([
-    "#111827","#334155","#667eea","#0ea5e9","#10b981","#f59e0b","#ef4444","#6b7280","#000000"
+    "#111827", "#334155", "#667eea", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#6b7280", "#000000"
   ]);
 
   const styleOk = (prop, val) => {
@@ -302,7 +370,7 @@ function sanitizeParaHtml(html) {
           const idx = pair.indexOf(":");
           if (idx === -1) return;
           const prop = pair.slice(0, idx);
-          const val  = pair.slice(idx + 1);
+          const val = pair.slice(idx + 1);
           if (styleOk(prop, val)) kept.push(prop.trim().toLowerCase() + ":" + val.trim());
         });
 
@@ -562,6 +630,37 @@ small.k{color:#b9c2d0}
   margin-bottom: 0;
 }
 
+/* --- Mail-merge tag menu --- */
+.tag-menu {
+  position: absolute;
+  z-index: 70;
+  min-width: 260px;
+  max-height: 240px;
+  overflow: auto;
+  background: #1f2937;              /* slate-800 */
+  border: 1px solid #334155;        /* slate-700 */
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+}
+.tag-menu .item {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; padding: 8px 10px; cursor: pointer;
+}
+.tag-menu .item:hover, .tag-menu .item.active {
+  background: #0b1224;              /* dark hover */
+}
+.tag-menu .label { color: #e5e7eb; font-size: 13px; }
+.tag-menu .val   { color: #93c5fd; font-size: 12px; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+
+/* --- Grouped menu styles --- */
+.tag-menu .group-title {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;                /* slate-300 */
+  border-top: 1px solid #334155; /* slate-700 */
+}
+.tag-menu .group:first-child .group-title { border-top: 0; }
 `;
 
 /* ===================== Main App ===================== */
@@ -872,44 +971,38 @@ export default function App() {
 
             <div>
               {sections.map((s) => (
-  <div
-    key={s.id}
-    className="card paragraph-section"
-    onDragOver={onDragOver(s.id)}
-    onDrop={onDrop(s.id)}
-    title="Drag to reorder"
-  >
+                <div
+                  key={s.id}
+                  className="card paragraph-section"
+                  onDragOver={onDragOver(s.id)}
+                  onDrop={onDrop(s.id)}
+                  title="Drag to reorder"
+                >
                   <div className="head">
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        {/* Hamburger is now the ONLY drag handle */}
-        <button
-          className="drag drag-handle"
-          draggable
-          onDragStart={onDragStart(s.id)}
-          onDragEnd={() => (draggingId.current = null)}
-          aria-label="Drag section"
-          type="button"
-        >
-          ☰
-        </button>
+                      {/* Hamburger is now the ONLY drag handle */}
+                      <button
+                        className="drag drag-handle"
+                        draggable
+                        onDragStart={onDragStart(s.id)}
+                        onDragEnd={() => (draggingId.current = null)}
+                        aria-label="Drag section"
+                        type="button"
+                      >
+                        ☰
+                      </button>
                       <span className="badge">{s.type === "paragraph" ? "Paragraph" : "CTA Button"}</span>
                     </div>
                     <button className="btn remove" onClick={() => removeSection(s.id)} title="Remove">− Remove</button>
-
                   </div>
-
                   {s.type === "paragraph" ? (
                     <div>
-
-<ReactQuill
-  theme="snow"
-  value={s.content}
-  onChange={(val) => updateSection(s.id, { content: val })}
-  modules={quillModules}
-  formats={quillFormats}
-  scrollingContainer={null}
-/>
-
+                      <ParagraphEditor
+                        value={s.content}
+                        onChange={(val) => updateSection(s.id, { content: val })}
+                        modules={quillModules}
+                        formats={quillFormats}
+                      />
                       {s.content && (
                         <button
                           type="button"
@@ -1054,14 +1147,13 @@ function FieldText({ label, name, value, onChange, max }) {
       <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
         {label} <small style={{ color: "#666" }}>({name})</small>
       </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input
-          type="text"
-          value={value}
-          maxLength={max}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: "95%", padding: 8 }}
-        />
+     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+       <MergeInput
+         value={value}
+         onChange={onChange}
+         maxLength={max}
+         placeholder=""
+       />
         {value && (
           <button
             type="button"
@@ -1088,4 +1180,314 @@ function cryptoRandom() {
     return `id_${a[0].toString(16)}`;
   }
   return `id_${Math.random().toString(16).slice(2)}`;
+}
+
+function ParagraphEditor({ value, onChange, modules, formats }) {
+  const quillRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
+  const [triggerIndex, setTriggerIndex] = useState(null);
+  const [active, setActive] = useState(0); // flat index across groups
+
+  const filteredGroups = useMemo(() => filterGroups(query), [query]);
+  const flat = useMemo(
+    () => filteredGroups.flatMap(g => g.items.map(it => ({ ...it, group: g.group }))),
+    [filteredGroups]
+  );
+
+  useEffect(() => { setActive(0); }, [query]);
+
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor?.();
+    if (!quill) return;
+    const root = quill.root;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "#") {
+        e.preventDefault();
+        const r = quill.getSelection(true);
+        if (!r) return;
+        quill.insertText(r.index, "#", "user");
+        quill.setSelection(r.index + 1, 0, "user");
+        const b = quill.getBounds(r.index + 1);
+        setAnchor({ top: b.top + b.height + 6, left: b.left });
+        setTriggerIndex(r.index);
+        setQuery("");
+        setActive(0);
+        setOpen(true);
+        return;
+      }
+
+      if (!open) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user");
+        setOpen(false);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!flat.length) return;
+        const pick = flat[Math.max(0, Math.min(active, flat.length - 1))];
+        if (triggerIndex != null) {
+          quill.deleteText(triggerIndex, 1, "user");
+          quill.insertText(triggerIndex, pick.value, "user");
+          quill.setSelection(triggerIndex + pick.value.length, 0, "user");
+        }
+        setOpen(false);
+        return;
+      }
+      if (e.key === "ArrowDown") { e.preventDefault(); setActive(i => Math.min(i + 1, Math.max(0, flat.length - 1))); return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setActive(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        if (query.length) setQuery(q => q.slice(0, -1));
+        else { if (triggerIndex != null) quill.deleteText(triggerIndex, 1, "user"); setOpen(false); }
+        return;
+      }
+      if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setQuery(q => q + e.key);
+        const r = quill.getSelection(true);
+        const b = quill.getBounds(r?.index ?? 0);
+        setAnchor({ top: b.top + b.height + 6, left: b.left });
+        return;
+      }
+    };
+
+    root.addEventListener("keydown", handleKeyDown);
+    return () => root.removeEventListener("keydown", handleKeyDown);
+  }, [open, query, active, flat]);
+
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor?.();
+    if (!quill) return;
+    const onSel = (range) => { if (!range) setOpen(false); };
+    quill.on("selection-change", onSel);
+    return () => quill.off?.("selection-change", onSel);
+  }, []);
+
+  const choose = (item) => {
+    const quill = quillRef.current?.getEditor?.();
+    if (!quill || triggerIndex == null) return;
+    quill.deleteText(triggerIndex, 1, "user");
+    quill.insertText(triggerIndex, item.value, "user");
+    quill.setSelection(triggerIndex + item.value.length, 0, "user");
+    setOpen(false);
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <ReactQuill
+        ref={quillRef}
+        theme="snow"
+        value={value}
+        onChange={onChange}
+        modules={modules}
+        formats={formats}
+        scrollingContainer={null}
+      />
+      {open && (
+        <div
+          className="tag-menu"
+          style={{ top: anchor.top, left: anchor.left, position: "absolute" }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {flat.length ? (
+            (() => {
+              let ptr = 0; // running flat index for highlight / click
+              return filteredGroups.map(g => (
+                <div className="group" key={g.group}>
+                  <div className="group-title">{g.group}</div>
+                  {g.items.map(it => {
+                    const idx = ptr++;
+                    return (
+                      <div
+                        key={g.group + ":" + it.value}
+                        className={`item ${idx === active ? "active" : ""}`}
+                        onMouseEnter={() => setActive(idx)}
+                        onClick={() => choose(it)}
+                      >
+                        <span className="label">{it.label}</span>
+                        <span className="val">{it.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
+          ) : (
+            <div className="item"><span className="label">No matches…</span></div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MergeInput({ value, onChange, maxLength, placeholder }) {
+  const inputRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [triggerIndex, setTriggerIndex] = useState(null);
+  const [active, setActive] = useState(0);
+  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
+
+  const filteredGroups = useMemo(() => filterGroups(query), [query]);
+  const flat = useMemo(
+    () => filteredGroups.flatMap(g => g.items.map(it => ({ ...it, group: g.group }))),
+    [filteredGroups]
+  );
+  useEffect(() => { setActive(0); }, [query]);
+
+  const openMenuAtInput = (caretIndex) => {
+    const el = inputRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setAnchor({ top: r.height + 6, left: 10 }); // simple anchor under the input
+    setTriggerIndex(caretIndex);
+    setQuery("");
+    setActive(0);
+    setOpen(true);
+  };
+
+  const insertAt = (text, start, end, insert) => {
+    const before = text.slice(0, start);
+    const after  = text.slice(end);
+    let next = before + insert + after;
+    if (typeof maxLength === "number" && next.length > maxLength) {
+      const allowed = maxLength - (text.length - (end - start));
+      next = before + insert.slice(0, Math.max(0, allowed)) + after;
+    }
+    return next;
+  };
+
+  const choose = (item) => {
+    const el = inputRef.current;
+    if (!el || triggerIndex == null) return;
+    const next = insertAt(value, triggerIndex, triggerIndex + 1, item.value);
+    const caret = Math.min(next.length, triggerIndex + item.value.length);
+    onChange(next);
+    setOpen(false);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(caret, caret);
+    });
+  };
+
+  const onKeyDown = (e) => {
+    const el = inputRef.current;
+    if (!el) return;
+
+    if (e.key === "#") {
+      e.preventDefault();
+      const start = el.selectionStart ?? value.length;
+      const end   = el.selectionEnd ?? value.length;
+      const next = insertAt(value, start, end, "#");
+      onChange(next);
+      openMenuAtInput(start);
+      requestAnimationFrame(() => {
+        inputRef.current?.setSelectionRange(start + 1, start + 1);
+      });
+      return;
+    }
+
+    if (!open) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (triggerIndex != null) {
+        const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
+        onChange(next);
+      }
+      setOpen(false);
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!flat.length) return;
+      choose(flat[Math.max(0, Math.min(active, flat.length - 1))]);
+      return;
+    }
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive(i => Math.min(i + 1, Math.max(0, flat.length - 1))); return; }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setActive(i => Math.max(i - 1, 0)); return; }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (query.length) setQuery(q => q.slice(0, -1));
+      else {
+        if (triggerIndex != null) {
+          const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
+          onChange(next);
+        }
+        setOpen(false);
+      }
+      return;
+    }
+    if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      setQuery(q => q + e.key);
+      return;
+    }
+  };
+
+  const onBlur = () => {
+    if (open && triggerIndex != null) {
+      const next = insertAt(value, triggerIndex, triggerIndex + 1, "");
+      onChange(next);
+    }
+    setOpen(false);
+  };
+
+  return (
+    <div className="merge-input-wrap" style={{ position: "relative", flex: 1, minWidth: 0 }}>
+      <input
+        ref={inputRef}
+        className="input"
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={onBlur}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        style={{ width: "95%", padding: 8, boxSizing: "border-box", display: "block" }}
+      />
+      {open && (
+        <div
+          className="tag-menu"
+          style={{ position: "absolute", top: anchor.top, left: anchor.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {flat.length ? (
+            (() => {
+              let ptr = 0;
+              return filteredGroups.map(g => (
+                <div className="group" key={g.group}>
+                  <div className="group-title">{g.group}</div>
+                  {g.items.map(it => {
+                    const idx = ptr++;
+                    return (
+                      <div
+                        key={g.group + ":" + it.value}
+                        className={`item ${idx === active ? "active" : ""}`}
+                        onMouseEnter={() => setActive(idx)}
+                        onClick={() => choose(it)}
+                      >
+                        <span className="label">{it.label}</span>
+                        <span className="val">{it.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()
+          ) : (
+            <div className="item"><span className="label">No matches…</span></div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
