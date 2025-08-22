@@ -16,7 +16,7 @@ Install node
 nvm install node
 ```
 
-Clone the repo\
+Clone the repo
 ```
 git clone https://github.com/myclubgroup/template-editor.git
 cd template-editor
