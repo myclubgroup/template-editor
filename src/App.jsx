@@ -2,44 +2,13 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
+import brandsData from "./brands.json";
+import baseTemplate from "./template.html?raw";
 
-// Optional: restrict to a brand palette (recommended for email)
-const COLOR_PALETTE = [
-  "#111827", // near-black
-  "#334155", // slate-700
-  "#667eea", // brand
-  "#0ea5e9", // accent blue
-  "#10b981", // green
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#6b7280", // gray
-  "#000000", // black
-];
+/* ===================== BRANDS ===================== */
+const isHex = (s) => typeof s === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s);
 
-const quillModules = {
-  toolbar: [
-    ["bold", "italic", "underline"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    [{ color: COLOR_PALETTE }, { background: [] }], // add color & highlight
-    ["link"],
-    ["clean"],
-  ],
-};
-
-const quillFormats = [
-  "bold",
-  "italic",
-  "underline",
-  "list",
-  "color",
-  "background", // <-- important
-  "link",
-];
-
-const quillMiniModules = {
-  toolbar: [["bold", "italic"], ["clean"]],
-};
-const quillMiniFormats = ["bold", "italic"];
+const DEFAULT_CTA_COLOR = "#15ad36";
 
 // ---- Mail-merge tags grouped by module ----
 const MERGE_GROUPS = [
@@ -88,113 +57,44 @@ const filterGroups = (q) => {
   })).filter((g) => g.items.length);
 };
 
-/* ===================== Brand HTML blocks ===================== */
-const brandBlocks = {
-  myclub: {
-    HEADER: `
-<td align="center" height="120" style="height:120px; padding:0; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(10, 26, 54) 100%)">
-  <img imgfilesize="4054" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=87972724af3582006b7c3e3104ee518703294fe114a5e654eb29439fef7fc12cc01bab2f9f213296ef943d3f42bf43616df27d9b85c54301cb3b6609123d80015d46c3cf8effbaae6690a928863d40363301ab2b56949a4b27fcacb6e6050574" alt="" style="max-height:100%; vertical-align:middle;" />
-</td>`.trim(),
-    FOOTER: `
-My Club Group and Decathlon My Club are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
-Decathlon is a registered trade mark of Decathlon SA and used under licence.
-<br/>
-<a href="https://myclubgroup.co.uk/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> | 
-<a href="https://myclubgroup.co.uk/terms-conditions/" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> | 
-<a href="https://myclubgroup.co.uk/getstarted/" target="_blank" rel="noopener noreferrer">Contact Us</a>
+// Validate brand data and extract valid data into a new object
+function validateBrands(data) {
+  if (!data || typeof data !== "object") return null;
 
-`.trim(),
-  },
-  decathlon: {
-    HEADER: `
-<td align="center" height="120" style="height:120px; padding:0; background:linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(54, 67, 186) 100%)">
-  <img imgfilesize="4222" src="https://crm.zoho.eu/crm/viewInLineImage?fileContent=16dd9ff341b5533854c3c0f4fb18f4f7fd77b29599b48e692b77e733cb65641f7c8549da1a3ea44ef2bd8b0c94186ed834a3ab3fd06e6c080b46f360737c67145053c285b5e16acc216ffdad9a8ef078140066b38edfd8339335623786c7a561" alt="" style="max-height:100%; vertical-align:middle;" />
-</td>`.trim(),
-    FOOTER: `
-Decathlon My Club and My Club Group are trading names of My Club Europe PLC, registered in England &amp; Wales with company number 12087282. Registered office: 2 Oxted Chambers, 185-187 Station Road East, Oxted RH8 0QE.<br>
-Decathlon is a registered trade mark of Decathlon SA and used under licence.
-<br/>
-<a href="https://decathlonmyclub.co.uk/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> | 
-<a href="https://decathlonmyclub.co.uk/terms-and-conditions/" target="_blank" rel="noopener noreferrer">Terms & Conditions</a> | 
-<a href="https://decathlonmyclub.co.uk/contact/" target="_blank" rel="noopener noreferrer">Contact Us</a>
+  const out = {};
+  for (const [key, v] of Object.entries(data)) {
+    const brandName = (v?.brandName && String(v.brandName).trim()) || key;
+    const okHeaderFooter = v && typeof v.HEADER === "string" && typeof v.FOOTER === "string";
 
-`.trim(),
-  },
-};
+    const colors = v?.colors || {};
+    const okColors =
+      isHex(colors.primary || "") &&
+      isHex(colors.accent || "") &&
+      isHex(colors.text || "") &&
+      isHex(colors.bg || "") &&
+      isHex(colors.ctaColor || "");
 
-/* ===================== Base template with fences ===================== */
-const baseTemplate = `
-<html><head>
-  <meta charset="utf-8">
-  <meta content="width=device-width" name="viewport">
-  <meta name="x-apple-disable-message-reformatting">
-  <meta name="format-detection">
-  <style>
-    @media only screen and (max-width: 600px) {
-      .container { width: 100% !important }
-      .p32 { padding: 24px 16px !important }
-      .p24 { padding: 16px !important }
-      .stack { display: block !important; width: 100% !important }
-      .btn { display: block !important; width: 100% !important }
-      .tr-card { margin: 16px 0 !important }
-      .right { text-align: left !important }
+    if (okHeaderFooter && okColors) {
+      out[key] = {
+        brandName,
+        colors: {
+          primary: colors.primary,
+          accent: colors.accent,
+          text: colors.text,
+          bg: colors.bg,
+          ctaColor: colors.ctaColor,
+        },
+        HEADER: v.HEADER,
+        FOOTER: v.FOOTER,
+      };
+    } else {
+      console.warn(
+        `⚠️ Skipping invalid brand "${key}" — requires colors{primary,accent,text,bg}, defaults{ctaColor}, HEADER, FOOTER.`,
+      );
     }
-  </style>
-</head><body>
-<div style="word-wrap:break-word; word-break:break-word; font-family:Arial, Helvetica, sans-serif; font-size:14px">
-
-  <div style="display:none; max-height:0; overflow:hidden; font-size:1px; line-height:1px; color:rgb(254, 254, 254)">
-    <!-- editable:start name="SNIPPET" label="Snippet Text" type="text" max="80" -->Thank you for your kit enquiry!<!-- editable:end -->
-  </div>
-  
-  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0; background:rgb(248, 250, 252)">
-    <tr>
-      <td align="center" style="padding:20px 0">
-        <table cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px; background:rgb(255, 255, 255); border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0">
-          <tr>
-            <!-- editable:start name="HEADER" label="HEADER" type="rich" -->
-            <!-- injected header -->
-            <!-- editable:end -->
-          </tr>
-
-          <tr>
-            <td class="p32" style="padding:32px; color:rgb(51, 65, 85); font-size:16px; line-height:1.5">
-              
-              <div style="margin:0 0 16px 0; font-size:18px; line-height:1.3; color:rgb(30, 41, 59);>
-                <!-- editable:start name="GREETING" label="Greeting" type="text" max="120" --><strong>Dear \${Leads.First Name},</strong><!-- editable:end -->
-              </div>
-
-              <!-- editable:start name="SECTIONS" label="Body Sections" type="rich" -->
-              <!-- dynamic paragraphs and CTAs will be injected here -->
-              <!-- editable:end -->
-
-              <p style="margin:32px 0 0 0; color:rgb(71, 85, 105)">
-                Best regards,<br>
-                <div style="color:rgb(30, 41, 59)">
-                  <!-- editable:start name="SIGNOFF" label="Sign-off Name" type="text" max="120" --><strong>\${Leads.Lead Owner}</strong><!-- editable:end -->
-                </div>
-              </p>
-            </td>
-          </tr>
-          
-          <tr>
-            <td align="center" style="padding:24px 32px; background:rgb(241, 245, 249); border-top:1px solid rgb(226, 232, 240)">
-              <p style="margin:0; font-size:8px; line-height:1.5; color:rgb(100, 116, 139)">
-                <!-- editable:start name="FOOTER" label="FOOTER" type="rich" -->
-                <!-- injected footer -->
-                <!-- editable:end -->
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <div style="display:none; white-space:nowrap; font:15px / 0 courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-      </td>
-    </tr>
-  </table>
-</div>
-</body></html>
-`.trim();
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 /* ===================== Helpers: fences + sanitize ===================== */
 const FENCE_RE = /<!--\s*editable:start([\s\S]*?)-->([\s\S]*?)<!--\s*editable:end\s*-->/g;
@@ -443,8 +343,6 @@ function sanitizeParaHtml(html) {
 }
 
 /* ===================== Section builders ===================== */
-const DEFAULT_CTA_COLOR = "#667eea";
-
 const sectionHTML = {
   paragraph: (html) => `<div style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</div>`,
   cta: (label, href, color) =>
@@ -452,9 +350,7 @@ const sectionHTML = {
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
     <td align="center" style="padding:8px 0 24px 0">
-      <a class="btn" href="${href}" style="background:${safeColor(
-        color,
-      )}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
+      <a class="btn" href="${href}" style="background:${color}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
         ${escapeText(label)}
       </a>
     </td>
@@ -462,17 +358,21 @@ const sectionHTML = {
 </table>`.trim(),
 };
 
-function safeColor(c) {
-  if (typeof c === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)) return c;
-  return DEFAULT_CTA_COLOR;
+// Pure helper — no component state here
+function safeColor(c, fallback = "#667eea") {
+  return isHex(c || "") ? c : fallback;
 }
 
-/* ===================== Pretty CSS (no libs) ===================== */
+/* ======================================================== */
+/* =                                                      = */
+/* ======================= MAIN APP ======================= */
+/* =                                                      = */
+/* ======================================================== */
 
-/* ===================== Main App ===================== */
 export default function App() {
-  const [brand, setBrand] = useState("myclub"); // 'myclub' | 'decathlon'
-  const [html, setHtml] = useState(baseTemplate);
+  const [brands, setBrands] = useState({}); // <— loaded from JSON
+  const [brand, setBrand] = useState(""); // use first brand once loaded
+  const [html, setHtml] = useState(() => baseTemplate.trim()); // base template
 
   // Modal state for raw HTML
   const [showHtmlModal, setShowHtmlModal] = useState(false);
@@ -521,18 +421,113 @@ export default function App() {
   const blocks = useMemo(() => getBlocks(html), [html]);
   const getBlockValue = (name) => (blocks.find((b) => b.name === name)?.body || "").trim();
 
-  // Inject HEADER/FOOTER when brand changes
+  // Load brands from JSON and set initial brand if needed
   useEffect(() => {
-    let h = html;
-    if (blocks.find((b) => b.name === "HEADER")) {
-      h = replaceBlock(h, "HEADER", `\n${brandBlocks[brand].HEADER}\n`);
+    const validated = validateBrands(brandsData);
+    if (validated) {
+      setBrands(validated);
+      if (!validated[brand]) {
+        const first = Object.keys(validated)[0];
+        if (first) setBrand(first);
+      }
+    } else {
+      console.error("brands.json schema invalid or empty.");
     }
-    if (blocks.find((b) => b.name === "FOOTER")) {
-      h = replaceBlock(h, "FOOTER", `\n${brandBlocks[brand].FOOTER}\n`);
-    }
-    setHtml(h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brand]);
+  }, []);
+
+  // --- Brand-derived values (safe defaults if not loaded yet)
+  const activeBrand = brands[brand];
+  const brandColors = activeBrand?.colors ?? {
+    primary: "#667eea",
+    accent: "#3643ba",
+    text: "#111827",
+    bg: "#ffffff",
+    ctaColor: "#667eea",
+  };
+  const brandDefaults = { ctaColor: brandColors.ctaColor };
+
+  // run once to replace the initial fallback with the brand default after brands load
+  const didRetrofitInitialCTA = useRef(false);
+
+  useEffect(() => {
+    if (didRetrofitInitialCTA.current) return;
+    if (!Object.keys(brands).length) return; // brands not loaded yet
+
+    setSections((prev) => {
+      let changed = false;
+      const next = prev.map((sec) => {
+        if (sec.type !== "cta") return sec;
+
+        // If color is missing, invalid, or equals our initial fallback, upgrade it.
+        const col = sec.color;
+        const isInitialFallback =
+          typeof col === "string" && col.toLowerCase() === DEFAULT_CTA_COLOR.toLowerCase();
+
+        if (!col || !isHex(col) || isInitialFallback) {
+          changed = true;
+          return { ...sec, color: brandDefaults.ctaColor };
+        }
+        return sec;
+      });
+
+      didRetrofitInitialCTA.current = true;
+      return changed ? next : prev;
+    });
+  }, [brands, brandDefaults.ctaColor]);
+
+  // --- Quill color palette + modules (hooks must be inside component)
+  const quillPalette = useMemo(() => {
+    const base = [
+      brandColors.text,
+      brandColors.primary,
+      brandColors.accent,
+      "#111827", // near-black
+      "#334155", // slate-700
+      "#0ea5e9", // accent blue
+      "#10b981", // green
+      "#f59e0b", // amber
+      "#ef4444", // red
+      "#6b7280", // gray
+      "#000000", // black
+    ];
+    return Array.from(new Set(base.map((c) => c.toLowerCase())));
+  }, [brandColors]);
+
+  const quillModules = useMemo(
+    () => ({
+      toolbar: [
+        ["bold", "italic", "underline"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ color: quillPalette }, { background: [] }],
+        ["link"],
+        ["clean"],
+      ],
+    }),
+    [quillPalette],
+  );
+  const quillFormats = ["bold", "italic", "underline", "list", "color", "background", "link"];
+  const quillMiniModules = useMemo(() => ({ toolbar: [["bold", "italic"], ["clean"]] }), []);
+  const quillMiniFormats = ["bold", "italic"];
+
+  // Rebuild HEADER/FOOTER when brand changes
+  useEffect(() => {
+    const b = brands[brand];
+    if (!b) return; // no brands yet or invalid brand key
+
+    setHtml((prev) => {
+      let next = prev;
+      const blocksNow = getBlocks(prev); // re-scan fences against current html
+
+      if (blocksNow.find((blk) => blk.name === "HEADER")) {
+        next = replaceBlock(next, "HEADER", `\n${b.HEADER}\n`);
+      }
+      if (blocksNow.find((blk) => blk.name === "FOOTER")) {
+        next = replaceBlock(next, "FOOTER", `\n${b.FOOTER}\n`);
+      }
+      return next;
+    });
+  }, [brand, brands]);
 
   // Rebuild SECTIONS when sections change
   useEffect(() => {
@@ -545,14 +540,15 @@ export default function App() {
         if (s.type === "cta") {
           const label = s.label || "Click here";
           const href = s.href || "https://example.com";
-          const color = s.color || DEFAULT_CTA_COLOR;
-          return sectionHTML.cta(label, href, color);
+          const finalColor = safeColor(s.color, brandDefaults.ctaColor); // brand-aware fallback
+          return sectionHTML.cta(label, href, finalColor);
         }
         return "";
       })
       .join("\n");
+
     setHtml((prev) => replaceBlock(prev, "SECTIONS", `\n${bodyHtml}\n`));
-  }, [sections]);
+  }, [sections, brandDefaults.ctaColor]);
 
   // For inline fence fields (SNIPPET, GREETING, SIGNOFF), remove only
   // the padding newlines we insert around fences, but keep user spaces.
@@ -608,11 +604,12 @@ export default function App() {
       {
         id: cryptoRandom(),
         type: "cta",
-        label: "Click here",
+        label: "CLICK HERE",
         href: "https://example.com",
-        color: DEFAULT_CTA_COLOR,
+        color: brandDefaults.ctaColor, // brand default at creation
       },
     ]);
+
   const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
   const updateSection = (id, patch) =>
     setSections((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -640,26 +637,56 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // Resolve an imported brand identifier (key or name) to a real brand key
+  const resolveBrandKey = (val) => {
+    if (!val) return null;
+    const raw = String(val).trim();
+    // exact key match
+    if (brands[raw]) return raw;
+    // name match (case-insensitive)
+    const found = Object.entries(brands).find(
+      ([k, b]) => (b.name || k).toLowerCase() === raw.toLowerCase(),
+    );
+    return found ? found[0] : null;
+  };
+
   const importInputRef = useRef(null);
   const importJSON = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
-        if (data.brand && (data.brand === "myclub" || data.brand === "decathlon")) {
-          setBrand(data.brand);
+
+        // 1) Work out the desired brand from several possible fields
+        const importedBrandValue =
+          data.brandKey ?? data.brand ?? data.brand_name ?? data.brandName ?? data.name;
+
+        const resolvedKey = resolveBrandKey(importedBrandValue);
+        if (resolvedKey) {
+          setBrand(resolvedKey);
+        } else if (importedBrandValue) {
+          // If brands haven't loaded yet or no match by name/key,
+          // you can still stash the raw string; later effects will no-op until a match exists.
+          setBrand(String(importedBrandValue));
         }
+        // else: no brand info in file → keep current brand
+
+        // 2) Sections: keep valid colors; otherwise leave undefined so render falls back to brand default
         if (Array.isArray(data.sections)) {
           const fixed = data.sections.map((s) => ({
             id: s.id || cryptoRandom(),
             type: s.type === "cta" ? "cta" : "paragraph",
             content: s.type === "paragraph" ? s.content || "" : undefined,
-            label: s.type === "cta" ? s.label || "Click here" : undefined,
+            label: s.type === "cta" ? s.label || "CLICK HERE" : undefined,
             href: s.type === "cta" ? s.href || "https://example.com" : undefined,
-            color: s.type === "cta" ? safeColor(s.color || DEFAULT_CTA_COLOR) : undefined,
+            // DON'T pull in brandDefaults here (brand might have just changed).
+            // Leave undefined to allow runtime fallback: s.color || brandDefaults.ctaColor
+            color: s.type === "cta" && isHex(s.color) ? s.color : undefined,
           }));
           setSections(fixed);
         }
+
+        // 3) Inline fields
         const fields = data.fields || {};
         setHtml((prev) => {
           let h = prev;
@@ -734,11 +761,19 @@ export default function App() {
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
                 style={{ width: "50%" }}
+                disabled={!Object.keys(brands).length}
               >
-                <option value="myclub">My Club</option>
-                <option value="decathlon">Decathlon Club</option>
+                {Object.entries(brands).map(([key, b]) => (
+                  <option key={key} value={key}>
+                    {b.brandName || key}
+                  </option>
+                ))}
               </select>
-              <div className="help">Automatically updates HEADER and FOOTER.</div>
+              <div className="help">
+                {Object.keys(brands).length
+                  ? "Automatically updates HEADER and FOOTER."
+                  : "Loading brands…"}
+              </div>
             </div>
 
             {/* Fixed fields */}
@@ -900,16 +935,16 @@ export default function App() {
                         <div className="hex">
                           <input
                             type="color"
-                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            value={safeColor(s.color, brandDefaults.ctaColor)}
                             onChange={(e) => updateSection(s.id, { color: e.target.value })}
                             aria-label="CTA colour"
                           />
                           <input
                             className="input"
                             type="text"
-                            value={safeColor(s.color || DEFAULT_CTA_COLOR)}
+                            value={safeColor(s.color, brandDefaults.ctaColor)}
                             onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
-                            placeholder="#667eea"
+                            placeholder={brandDefaults.ctaColor}
                             style={{ width: 120 }}
                           />
                           <span className="help">Hex (#RRGGBB)</span>
