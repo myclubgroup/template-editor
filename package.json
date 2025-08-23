@@ -1,6 +1,6 @@
 {
   "name": "template-editor",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A React-based template editor with rich text editing capabilities.",
   "private": true,
   "dependencies": {
