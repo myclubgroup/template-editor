@@ -1,4 +1,4 @@
-/* ===================== Pretty CSS (no libs) ===================== */
+/* ===================== Base / Theme ===================== */
 :root {
   --bg: #0b1220;
   --card: #101729;
@@ -9,8 +9,10 @@
   --ok: #16a34a;
 }
 body {
-  background: #0b1220;
+  background: var(--bg);
 }
+
+/* ===================== Layout Panels ===================== */
 .editor-wrap {
   display: grid;
   grid-template-columns: 560px 1fr;
@@ -22,12 +24,14 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
 .panel {
+  position: relative;
   background: var(--card);
+  color: var(--text);
   border: 1px solid #1d2640;
   border-radius: 14px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  color: var(--text);
 }
 .panel h2 {
   margin: 0;
@@ -38,6 +42,13 @@ body {
 .panel-body {
   padding: 14px 16px;
 }
+.pinnedExport {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+/* ===================== Typography / Helpers ===================== */
 .label {
   font-weight: 600;
   margin-bottom: 6px;
@@ -50,16 +61,31 @@ body {
 .row {
   margin-bottom: 12px;
 }
+.separator {
+  height: 1px;
+  background: #1d2640;
+  margin: 12px 0;
+}
+small.k {
+  color: #b9c2d0;
+}
+
+/* ===================== Inputs / Buttons ===================== */
 .input,
 .select,
 .btn {
-  border-radius: 10px;
   border: 1px solid #27314f;
+  border-radius: 10px;
   padding: 10px 12px;
   outline: none;
 }
+.input:focus,
+.select:focus {
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.35);
+  border-color: #3b49a1;
+}
 .clear-link {
-  border: none;
+  border: 0;
   background: transparent;
   color: #007bff;
   cursor: pointer;
@@ -70,34 +96,30 @@ body {
   color: #d97706;
   text-decoration: underline;
 }
-.input:focus,
-.select:focus {
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.35);
-  border-color: #3b49a1;
-}
+
 .btn {
   display: inline-flex;
-  gap: 8px;
   align-items: center;
+  gap: 8px;
   cursor: pointer;
   transition: 0.15s ease;
   border-color: #2a3660;
 }
 .btn.primary {
   background: linear-gradient(135deg, var(--brand), var(--brand2));
-  border-color: transparent;
   color: #fff;
+  border-color: transparent;
 }
 .btn.import {
   background: linear-gradient(135deg, #10b981, #059669);
-  border-color: transparent;
   color: #fff;
+  border-color: transparent;
   font-size: 12px;
 }
 .btn.export {
   background: linear-gradient(135deg, #6210b9, #334782);
-  border-color: transparent;
   color: #fff;
+  border-color: transparent;
   font-size: 12px;
 }
 .btn.remove {
@@ -106,7 +128,6 @@ body {
 .btn.remove:hover {
   background: #b91c1c;
   color: #fff;
-  border-color: #7f1d1d;
 }
 .btn.add {
   border-color: #065f46;
@@ -118,21 +139,22 @@ body {
 }
 .btn.info {
   background: linear-gradient(135deg, #60a5fa, #38bdf8);
-  border-color: transparent;
   color: #0b1220;
+  border-color: transparent;
 }
 .btn.info:hover {
   background: linear-gradient(135deg, #93c5fd, #60a5fa);
-  color: #0b1220;
 }
+
+/* ===================== Cards / Preview ===================== */
 .stack {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 .card {
-  border: 1px solid #27314f;
   background: #0c1428;
+  border: 1px solid #27314f;
   border-radius: 12px;
   padding: 10px;
 }
@@ -150,6 +172,7 @@ body {
   padding: 2px 8px;
   border-radius: 999px;
 }
+
 .preview {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -166,14 +189,8 @@ body {
 iframe {
   background: #fff;
 }
-.separator {
-  height: 1px;
-  background: #1d2640;
-  margin: 12px 0;
-}
-small.k {
-  color: #b9c2d0;
-}
+
+/* ===================== Color Picker Row ===================== */
 .colorRow {
   display: grid;
   grid-template-columns: 110px 1fr;
@@ -194,16 +211,8 @@ small.k {
   gap: 8px;
   align-items: center;
 }
-.pinnedExport {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-}
-.panel {
-  position: relative;
-} /* allow absolute positioning inside */
 
-/* Modal */
+/* ===================== Modal ===================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -217,11 +226,11 @@ small.k {
   width: min(920px, 92vw);
   max-height: 86vh;
   background: #0e162c;
+  color: #e6ebf5;
   border: 1px solid #27314f;
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  color: #e6ebf5;
 }
 .modal .modal-head {
   display: flex;
@@ -240,7 +249,7 @@ small.k {
   border: 1px solid #27314f;
   border-radius: 10px;
   padding: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
 }
 .modal .actions {
   display: flex;
@@ -250,99 +259,20 @@ small.k {
   border-top: 1px solid #27314f;
 }
 
-/* === Quill editor area override === */
+/* ===================== Quill ===================== */
 .ql-container.ql-snow {
-  background: #ffffff; /* white background */
-  color: #111827; /* slate-900 text */
-  border-color: #334155; /* keep border consistent */
-}
-.ql-editor {
-  min-height: 120px; /* keep space for typing */
-  color: #111827; /* text color */
-  font-size: 14px;
-  line-height: 1.5;
-}
-.ql-editor.ql-blank::before {
-  color: #9ca3af; /* placeholder in gray */
-  font-style: normal;
-}
-.ql-toolbar.ql-snow {
-  background: #0b1224; /* slightly darker bar */
-  border-color: #334155;
-}
-/* Icon strokes/fills in toolbar (bold, italic, etc.) */
-.ql-snow .ql-stroke {
-  stroke: #e2e8f0; /* slate-200 */
-}
-.ql-snow .ql-fill,
-.ql-snow .ql-picker .ql-picker-label::before,
-.ql-snow .ql-picker .ql-picker-item::before {
-  fill: #e2e8f0;
-}
-.ql-snow .ql-picker-options {
-  background: #0b1224;
-  border-color: #334155;
-}
-/* Picker text + labels */
-.ql-snow .ql-picker,
-.ql-snow .ql-picker-options .ql-picker-item,
-.ql-snow .ql-picker-label {
-  color: #e2e8f0;
-}
-/* Hover/active states */
-.ql-snow .ql-toolbar button:hover .ql-stroke,
-.ql-snow .ql-toolbar button:focus .ql-stroke,
-.ql-snow .ql-toolbar .ql-picker-label:hover,
-.ql-snow .ql-toolbar .ql-picker-item:hover {
-  stroke: #ffffff;
-  color: #ffffff;
-}
-/* Disabled buttons look clearer but still muted */
-.ql-snow .ql-toolbar button.ql-active .ql-stroke {
-  stroke: #60a5fa; /* blue-400 for active */
-}
-.ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke {
-  stroke: #cbd5e1; /* slate-300 */
-}
-/* Links */
-.ql-editor a {
-  color: #93c5fd; /* blue-300 */
-  text-decoration: underline;
-}
-/* Focus ring to improve visibility */
-.ql-container.ql-snow:focus-within,
-.ql-container.ql-snow:has(.ql-editor:focus) {
-  outline: 2px solid #60a5fa;
-  outline-offset: 2px;
-  border-color: #60a5fa;
-}
-/* Keep the card border visible against dark bg */
-.your-paragraph-card-class {
+  background: #fff;
+  color: #111827;
   border: 1px solid #334155;
-  border-radius: 8px;
-}
-/* === Quill editor area rounded style === */
-.ql-container.ql-snow {
-  background: #ffffff; /* white document look */
-  color: #111827; /* dark text */
-  border: 1px solid #334155; /* subtle border */
-  border-radius: 0 0 0.75rem 0.75rem; /* match card rounding (bottom corners) */
-  overflow: hidden; /* clip inside corners */
+  border-radius: 0 0 0.75rem 0.75rem;
+  overflow: hidden;
 }
 .ql-toolbar.ql-snow {
+  background: #0b1224;
   border: 1px solid #334155;
   border-bottom: none;
-  border-radius: 0.75rem 0.75rem 0 0; /* top corners rounded */
-  background: #0b1224; /* dark toolbar */
+  border-radius: 0.75rem 0.75rem 0 0;
 }
-/* Keep consistent border highlight on focus */
-.ql-container.ql-snow:focus-within {
-  outline: 2px solid #60a5fa;
-  outline-offset: 0;
-  border-color: #60a5fa;
-  border-radius: 0 0 0.75rem 0.75rem;
-}
-/* Editor text */
 .ql-editor {
   min-height: 120px;
   padding: 12px 16px;
@@ -354,6 +284,66 @@ small.k {
   color: #9ca3af;
   font-style: normal;
 }
+
+.ql-snow .ql-stroke {
+  stroke: #e2e8f0;
+}
+.ql-snow .ql-fill,
+.ql-snow .ql-picker .ql-picker-label::before,
+.ql-snow .ql-picker .ql-picker-item::before {
+  fill: #e2e8f0;
+}
+.ql-snow .ql-picker,
+.ql-snow .ql-picker-options .ql-picker-item,
+.ql-snow .ql-picker-label {
+  color: #e2e8f0;
+}
+.ql-snow .ql-picker-options {
+  background: #0b1224;
+  border-color: #334155;
+}
+
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:focus .ql-stroke,
+.ql-snow .ql-toolbar .ql-picker-label:hover,
+.ql-snow .ql-toolbar .ql-picker-item:hover {
+  stroke: #fff;
+  color: #fff;
+}
+.ql-snow .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #60a5fa;
+}
+.ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke {
+  stroke: #cbd5e1;
+}
+
+.ql-editor a {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+.ql-container.ql-snow:focus-within {
+  outline: 2px solid #60a5fa;
+  outline-offset: 0;
+  border-color: #60a5fa;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Inline Quill */
+.inline-quill .ql-editor {
+  min-height: 40px;
+  max-height: 80px;
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+.inline-quill .ql-container.ql-snow {
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+.inline-quill .ql-toolbar.ql-snow {
+  border-radius: 0.5rem 0.5rem 0 0;
+  padding: 4px 6px;
+}
+
+/* ===================== Drag / Sections ===================== */
 .drag {
   cursor: grab;
   user-select: none;
@@ -371,41 +361,25 @@ small.k {
 .drag-handle:hover {
   background: rgba(255, 255, 255, 0.06);
 }
-/* Prevent drag interactions inside Quill content */
 .ql-editor * {
   -webkit-user-drag: none;
 }
-/* --- Compact Quill for inline fields (Greeting/Signoff) --- */
-.inline-quill .ql-editor {
-  min-height: 40px; /* similar to a single-line input */
-  max-height: 80px; /* allow small wrap */
-  padding: 8px 12px; /* match your input padding */
-  overflow-y: auto;
-}
-.inline-quill .ql-container.ql-snow {
-  border-radius: 0 0 0.5rem 0.5rem; /* slightly tighter corners */
-}
-.inline-quill .ql-toolbar.ql-snow {
-  border-radius: 0.5rem 0.5rem 0 0;
-  padding: 4px 6px; /* optional: denser toolbar */
-}
-/* Add gap only below paragraph sections */
 .paragraph-section {
-  margin-bottom: 0.5rem; /* 8px gap */
+  margin-bottom: 0.5rem;
 }
-/* Optional: remove gap after the last paragraph */
 .paragraph-section:last-child {
   margin-bottom: 0;
 }
-/* --- Mail-merge tag menu --- */
+
+/* ===================== Merge Tag Menu ===================== */
 .tag-menu {
   position: absolute;
   z-index: 70;
   min-width: 260px;
   max-height: 240px;
   overflow: auto;
-  background: #1f2937; /* slate-800 */
-  border: 1px solid #334155; /* slate-700 */
+  background: #1f2937;
+  border: 1px solid #334155;
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
@@ -419,7 +393,7 @@ small.k {
 }
 .tag-menu .item:hover,
 .tag-menu .item.active {
-  background: #0b1224; /* dark hover */
+  background: #0b1224;
 }
 .tag-menu .label {
   color: #e5e7eb;
@@ -428,15 +402,14 @@ small.k {
 .tag-menu .val {
   color: #93c5fd;
   font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
 }
-/* --- Grouped menu styles --- */
 .tag-menu .group-title {
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #cbd5e1; /* slate-300 */
-  border-top: 1px solid #334155; /* slate-700 */
+  color: #cbd5e1;
+  border-top: 1px solid #334155;
 }
 .tag-menu .group:first-child .group-title {
   border-top: 0;
