@@ -19,6 +19,14 @@
     "deploy": "yarn build && gh-pages -d dist",
     "postinstall": "husky"
   },
+  "lint-staged": {
+    "src/**/*.{js,jsx}": [
+      "prettier --write"
+    ],
+    "src/**/*.{css,scss,json,md}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
     "@stylistic/eslint-plugin": "^5.2.3",
