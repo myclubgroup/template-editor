@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import tailwindcss from '@tailwindcss/vite'
 
 function buildInfoPlugin() {
   let info;
@@ -21,7 +22,11 @@ function buildInfoPlugin() {
       buildTime: new Date().toISOString(),
     };
   } catch {
-    info = { version: "0.0.0", commit: "unknown", buildTime: new Date().toISOString() };
+    info = {
+      version: "0.0.0",
+      commit: "unknown",
+      buildTime: new Date().toISOString(),
+    };
   }
 
   return {
@@ -48,6 +53,6 @@ function buildInfoPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), buildInfoPlugin()],
+  plugins: [react(), buildInfoPlugin(),tailwindcss(),],
   base: "/template-editor/", // ← repo name with slashes
 });

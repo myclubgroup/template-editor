@@ -30,9 +30,15 @@ const MERGE_GROUPS = [
       { label: "Deal Owner", value: "${Deals.Deal Owner}" },
       { label: "Club Name", value: "${Deals.Club Name}" },
       { label: "Deal Name", value: "${Deals.Deal Name}" },
-      { label: "Unique Deal Reference", value: "${Deals.Unique Deal Reference}" },
+      {
+        label: "Unique Deal Reference",
+        value: "${Deals.Unique Deal Reference}",
+      },
       { label: "Invoice Number", value: "${Deals.Invoice Number}" },
-      { label: "Delivery Contact Name", value: "${Deals.Delivery Contact Name}" },
+      {
+        label: "Delivery Contact Name",
+        value: "${Deals.Delivery Contact Name}",
+      },
     ],
   },
   {
@@ -433,7 +439,6 @@ export default function App() {
     } else {
       console.error("brands.json schema invalid or empty.");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Brand-derived values (safe defaults if not loaded yet)
@@ -725,7 +730,9 @@ export default function App() {
   };
 
   const downloadHtmlFile = () => {
-    const blob = new Blob([exportedHtml || ""], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([exportedHtml || ""], {
+      type: "text/html;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -739,8 +746,15 @@ export default function App() {
       <div className="editor-wrap">
         {/* Left panel: Editor */}
         <div className="panel">
-          <h2 style={{ marginTop: 0, display: "flex", alignItems: "baseline", gap: 6 }}>
-            Email Editor
+          <h2
+            style={{
+              marginTop: 0,
+              display: "flex",
+              alignItems: "baseline",
+              gap: 6,
+            }}
+          >
+            Template Editor
             {typeof __BUILD_INFO__ !== "undefined" && (
               <span style={{ fontSize: "8px", color: "#666" }}>
                 v{__BUILD_INFO__.buildNumber || __BUILD_INFO__.version}
@@ -817,7 +831,11 @@ export default function App() {
             {/* Dynamic body sections */}
             <div
               className="row"
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
               <div className="label">
                 Body Sections <span className="badge">drag to reorder</span>
@@ -842,7 +860,13 @@ export default function App() {
                   title="Drag to reorder"
                 >
                   <div className="head">
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
                       {/* Hamburger is now the ONLY drag handle */}
                       <button
                         className="drag drag-handle"
@@ -943,7 +967,11 @@ export default function App() {
                             className="input"
                             type="text"
                             value={safeColor(s.color, brandDefaults.ctaColor)}
-                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                            onChange={(e) =>
+                              updateSection(s.id, {
+                                color: e.target.value.trim(),
+                              })
+                            }
                             placeholder={brandDefaults.ctaColor}
                             style={{ width: 120 }}
                           />
@@ -1350,7 +1378,12 @@ function MergeInput({ value, onChange, maxLength, placeholder }) {
         onBlur={onBlur}
         maxLength={maxLength}
         placeholder={placeholder}
-        style={{ width: "95%", padding: 8, boxSizing: "border-box", display: "block" }}
+        style={{
+          width: "95%",
+          padding: 8,
+          boxSizing: "border-box",
+          display: "block",
+        }}
       />
       {open && (
         <div
