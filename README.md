@@ -1,6 +1,12 @@
-## Instructions
+# About
 
-Install nvm
+A small editor for building email templates using fenced editable regions (&lt;!-- editable:start ... --&gt; / &lt;!-- editable:end --&gt;).
+
+The UI lets you reorder sections, edit paragraph blocks (Rich Text via ReactQuill), and export final HTML for email.
+
+# Getting started
+
+### Install nvm
 
 ```sh
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
@@ -8,45 +14,64 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
 ```sh
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 ```
 
-Install node
+### Install node (24 recommended)
 
 ```
 nvm install node
 ```
 
-Clone the repo
+### Clone the repo
 
 ```
 git clone https://github.com/myclubgroup/template-editor.git
 cd template-editor
 ```
 
-Install yarn
+### Install yarn 4.x
 
 ```
 npm install -g corepack
+corepack enable
 ```
 
-Run `yarn`
+### Install dependencies
 
-##
+```
+yarn install
+```
 
-### `yarn run dev`
+## Developer notes
 
-Runs the app in development mode.\
-Open [http://localhost:5173/template-editor/](http://localhost:5173/template-editor/) to view in your browser.
+- Base template HTML is in `src/template.html`.
+- Editable blocks are marked with HTML comments: `<!-- editable:start ... --> ... <!-- editable:end -->`.
+- Add or modify editable blocks using the fence comments and attributes: name, label, type, max, etc.
+- Mail-merge tags are defined as JS constants.
+- Brands are defined in `src/brands.json`.
+- Use the `sectionHTML` helpers to control how paragraph / CTA blocks are rendered into the exported HTML.
 
+# Running the app
+
+### Runs the app in development mode.
+
+```
+yarn run dev
+```
+
+Open [http://localhost:5173/template-editor/](http://localhost:5173/template-editor/) to view in your browser.\
 The page will reload when you make changes.
 
-### `yarn run build`
+### Builds the app and places it in the `dist` folder.
 
-Builds the app for production to the `dist` folder.\
-Your app is ready to be deployed!
+```
+yarn run build
+```
 
-### `yarn run deploy`
+### Deploy the app to Github Pages
 
-Deploys the app to Github Pages.
+```
+yarn run deploy
+```

@@ -51,27 +51,37 @@ const MERGE_GROUPS = [
   },
 ];
 
-// Utility: filter groups by query, keeping order and dropping empty groups
+/**
+ * Utility: filter groups by query, keeping order and dropping empty groups
+ */
 const filterGroups = (q) => {
   const query = (q || "").trim().toLowerCase();
   if (!query) return MERGE_GROUPS;
-  return MERGE_GROUPS.map((g) => ({
+
+  // Filter groups by query, keeping order
+  const groups = MERGE_GROUPS.map((g) => ({
     group: g.group,
     items: g.items.filter(
       (t) => t.label.toLowerCase().includes(query) || t.value.toLowerCase().includes(query),
     ),
-  })).filter((g) => g.items.length);
+  }));
+
+  // Drop empty groups
+  return groups.filter((g) => g.items.length);
 };
 
-// Validate brand data and extract valid data into a new object
+/**
+ * Validate brand data and extract valid data into a new object.
+ */
 function validateBrands(data) {
   if (!data || typeof data !== "object") return null;
 
   const out = {};
   for (const [key, v] of Object.entries(data)) {
     const brandName = (v?.brandName && String(v.brandName).trim()) || key;
+    // Check if the brand has a valid HEADER and FOOTER
     const okHeaderFooter = v && typeof v.HEADER === "string" && typeof v.FOOTER === "string";
-
+    // Check if the brand has valid colors
     const colors = v?.colors || {};
     const okColors =
       isHex(colors.primary || "") &&
@@ -81,6 +91,7 @@ function validateBrands(data) {
       isHex(colors.ctaColor || "");
 
     if (okHeaderFooter && okColors) {
+      // Add the brand to the output object
       out[key] = {
         brandName,
         colors: {
@@ -94,11 +105,13 @@ function validateBrands(data) {
         FOOTER: v.FOOTER,
       };
     } else {
+      // Warn about invalid brands
       console.warn(
         `⚠️ Skipping invalid brand "${key}" — requires colors{primary,accent,text,bg}, defaults{ctaColor}, HEADER, FOOTER.`,
       );
     }
   }
+  // Return the output object if it's not empty
   return Object.keys(out).length ? out : null;
 }
 
@@ -113,6 +126,20 @@ function parseAttrs(raw) {
   return out;
 }
 
+/**
+ * Extracts all editable blocks from a given HTML string.
+ *
+ * The function takes a HTML string and returns an array of objects
+ * with the following properties:
+ *
+ * - `name`: The name of the block (from the `name` attribute).
+ * - `label`: The label of the block (from the `label` attribute or the `name` attribute).
+ * - `type`: The type of the block (from the `type` attribute or `"textarea"` by default).
+ * - `max`: The maximum allowed length of the block (from the `max` attribute).
+ * - `fullMatch`: The full match of the block (including the fence).
+ * - `start` and `end`: The start and end indices of the block in the original HTML.
+ * - `body`: The contents of the block (without the fence).
+ */
 function getBlocks(html) {
   const blocks = [];
   let m;
@@ -134,6 +161,9 @@ function getBlocks(html) {
   return blocks;
 }
 
+/**
+ * Replaces an editable block in an HTML string with new content.
+ */
 function replaceBlock(html, name, newBody) {
   const re = new RegExp(
     `<!--\\s*editable:start([^>]*name="${name}"[^>]*)-->([\\s\\S]*?)<!--\\s*editable:end\\s*-->`,
@@ -144,18 +174,33 @@ function replaceBlock(html, name, newBody) {
   });
 }
 
+/**
+ * Escapes HTML special characters in a given string.
+ */
 function escapeText(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // Inline-only sanitizer for GREETING and SIGNOFF (bold/italic, links, <br>).
 // Unwraps block tags like <p>/<div>, strips attributes, preserves safe <a href>.
+// This is a more restrictive sanitizer than the one used for the main body text.
 function sanitizeInlineHtml(html) {
   const root = document.createElement("div");
   root.innerHTML = html;
 
-  const allowedInline = new Set(["strong", "em", "u", "a", "br"]);
+  const allowedInline = new Set([
+    // Allow bold, italic, underline, links, and line breaks
+    "strong",
+    "em",
+    "u",
+    "a",
+    "br",
+  ]);
 
+  // Recursively walk the DOM tree and apply the following rules:
+  // 1. Unwrap block tags like <p>/<div>
+  // 2. Strip attributes from allowed inline tags
+  // 3. Replaces any disallowed tags with their text content
   const unwrap = (el) => {
     const frag = document.createDocumentFragment();
     while (el.firstChild) frag.appendChild(el.firstChild);
@@ -170,7 +215,7 @@ function sanitizeInlineHtml(html) {
       // Allow only inline tags; unwrap common block/neutral wrappers
       if (!allowedInline.has(tag)) {
         if (tag === "p" || tag === "div" || tag === "span" || tag.startsWith("h")) {
-          // drop attributes & unwrap
+          // Drop attributes & unwrap
           while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
           walk(child);
           unwrap(child);
@@ -202,7 +247,15 @@ function sanitizeInlineHtml(html) {
   return root.innerHTML;
 }
 
-// Sanitizer that also fixes Quill's bullet lists (<ol> -> <ul> when appropriate)
+/**
+ * Sanitizes HTML for use in email templates.
+ *
+ * This function runs two passes on the input HTML:
+ *
+ * 1. Normalize list containers: convert `<ol>` to `<ul>` when the list contains only bullet items.
+ * 2. Sanitize tags + attributes: strip all tags except for those whitelisted, and strip all attributes
+ *    except for `href` on `<a>` and `style` on `<span>` with allowed color/background-color properties.
+ */
 function sanitizeParaHtml(html) {
   const root = document.createElement("div");
   root.innerHTML = html;
@@ -239,6 +292,9 @@ function sanitizeParaHtml(html) {
     "span", // <— NEW for color/highlight
   ]);
 
+  /**
+   * Determines if a CSS property and its value are allowed.
+   */
   const styleOk = (prop, val) => {
     const p = prop.trim().toLowerCase();
     const v = val.trim().toLowerCase();
@@ -364,7 +420,10 @@ const sectionHTML = {
 </table>`.trim(),
 };
 
-// Pure helper — no component state here
+/**
+ * Pure helper function to validate a color string and return it if it's valid
+ * or a fallback color if it's not.
+ */
 function safeColor(c, fallback = "#667eea") {
   return isHex(c || "") ? c : fallback;
 }
@@ -555,21 +614,31 @@ export default function App() {
     setHtml((prev) => replaceBlock(prev, "SECTIONS", `\n${bodyHtml}\n`));
   }, [sections, brandDefaults.ctaColor]);
 
-  // For inline fence fields (SNIPPET, GREETING, SIGNOFF), remove only
-  // the padding newlines we insert around fences, but keep user spaces.
+  /**
+   * Given HTML and an array of parsed blocks, return the current content of an
+   * inline fence field. Inline fields are special because they are meant to be
+   * single lines of text, so we normalize the whitespace when we display them.
+   */
   function getInlineFence(html, name, blocks) {
     const body = blocks.find((b) => b.name === name)?.body ?? "";
-    // remove exactly one leading and one trailing newline
+    // Remove exactly one leading and one trailing newline (if any)
     const unpadded = body.replace(/^\n/, "").replace(/\n$/, "");
-    // inline fields show newlines as spaces, but DO NOT trim ends
+    // Inline fields show newlines as spaces, but DO NOT trim ends
     return unpadded.replace(/\n/g, " ");
   }
 
-  const handleFenceChange = (name, value, type) => {
+  /**
+   * Replaces the contents of a named fence with new content.
+   */
+  function handleFenceChange(name, value, type) {
     const safe = type === "text" ? escapeText(value) : value;
     setHtml((prev) => replaceBlock(prev, name, `\n${safe}\n`));
-  };
+  }
 
+  /**
+   * Returns the body of the fence with the given name, or an empty string if
+   * the fence is not found.
+   */
   const getFenceBody = (name) =>
     (blocks.find((b) => b.name === name)?.body ?? "").replace(/^\n/, "").replace(/\n$/, "");
 
@@ -597,12 +666,20 @@ export default function App() {
     draggingId.current = null;
   };
 
-  /* --------- Section operations --------- */
+  /**
+   * Handles adding a new section to the editor. The new section is a paragraph
+   * and is added at the end of the current section list.
+   */
   const addParagraph = () =>
     setSections((s) => [
       ...s,
       { id: cryptoRandom(), type: "paragraph", content: "New paragraph..." },
     ]);
+
+  /**
+   * Handles adding a new call to action (CTA) to the editor. The new CTA is
+   * added at the end of the current section list.
+   */
   const addCTA = () =>
     setSections((s) => [
       ...s,
@@ -615,11 +692,16 @@ export default function App() {
       },
     ]);
 
-  const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
   const updateSection = (id, patch) =>
     setSections((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
 
-  /* --------- Import / Export JSON --------- */
+  /**
+   * Exports the current editor state as a JSON file.
+   * The exported object contains `version`, `brand`, `fields` and `sections` properties.
+   * `fields` contains the values of the "snippet", "greeting" and "signoff" blocks.
+   * `sections` contains the current section structure.
+   */
   const exportJSON = () => {
     const json = {
       version: 2,
@@ -656,13 +738,22 @@ export default function App() {
   };
 
   const importInputRef = useRef(null);
+  /**
+   * Import a JSON file into the editor state.
+   * The imported file should contain a JSON object with the following properties:
+   * - `brandKey` (optional): brand key to switch to (if present)
+   * - `brand` (optional): brand name to switch to (if present)
+   * - `fields` (optional): object mapping fence names to their new values
+   * - `sections` (optional): array of section objects to replace the current section list
+   */
   const importJSON = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
 
-        // 1) Work out the desired brand from several possible fields
+        // 1) Work out the desired brand from several possible fields.
+        // If no match, keep the current brand.
         const importedBrandValue =
           data.brandKey ?? data.brand ?? data.brand_name ?? data.brandName ?? data.name;
 
@@ -710,27 +801,49 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  /* --------- Export HTML (modal + copy, strip comments) --------- */
+  /**
+   * Export HTML (modal + copy, strip comments)
+   *
+   * Opens the export HTML modal with the HTML content pre-filled.
+   * Strips all HTML comments (including fences) and trims the output.
+   */
   const openHtmlModal = () => {
     const stripped = html
       .replace(/<!--[\s\S]*?-->/g, "") // strip all comments (including fences)
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+      .replace(/\n{3,}/g, "\n\n") // remove extra blank lines
+      .trim(); // remove trailing newline
     setExportedHtml(stripped);
     setShowHtmlModal(true);
   };
 
+  /**
+   * Copies the exported HTML to the user's clipboard.
+   * If the copy action fails, falls back to selecting the HTML text
+   * and prompting the user to copy it manually.
+   */
   const copyHtmlToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(exportedHtml);
       alert("HTML copied to clipboard!");
-    } catch {
+    } catch (e) {
+      // Fallback to manual copying
+      const el = document.querySelector("#exported-html");
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      selection.removeAllRanges();
+      selection.addRange(range);
       alert("Could not copy. Select all and copy manually.");
     }
   };
 
+  /**
+   * Downloads the exported HTML content as a file.
+   * The file name is set to "email-<brand>.html".
+   */
   const downloadHtmlFile = () => {
     const blob = new Blob([exportedHtml || ""], {
+      // Set the MIME type to text/html to ensure the browser renders the HTML content.
       type: "text/html;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -738,6 +851,7 @@ export default function App() {
     a.href = url;
     a.download = `email-${brand}.html`;
     a.click();
+    // Revoke the blob URL to free up memory.
     URL.revokeObjectURL(url);
   };
 
