@@ -31,7 +31,6 @@ h3 {
   .editor-wrap {
     @apply grid gap-4 p-4 grid-cols-[560px_1fr] max-[1100px]:grid-cols-1;
   }
-
   .panel {
     @apply relative bg-[var(--card)] text-[var(--text)] border border-[#1d2640] rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.35)];
   }
@@ -70,14 +69,11 @@ h3 {
   .input,
   .select,
   .btn {
-    @apply border border-[#27314f] rounded-[10px] py-2.5 px-3 outline-none;
+    @apply border border-[#27314f] rounded-[10px] py-2 px-3 outline-none;
   }
   .input:focus,
   .select:focus {
     @apply shadow-[0_0_0_2px_rgba(102,126,234,0.35)] border-[#3b49a1];
-  }
-  .clear-link {
-    @apply border-0 bg-transparent text-[#007bff] cursor-pointer text-xs p-0 hover:text-[#d97706] hover:underline;
   }
   .btn {
     @apply inline-flex items-center gap-2 cursor-pointer transition ease-linear duration-150 border border-[#2a3660];
@@ -99,6 +95,23 @@ h3 {
   }
   .btn.info {
     @apply text-[#0b1220] border-transparent bg-[linear-gradient(135deg,#60a5fa,#38bdf8)] hover:bg-[linear-gradient(135deg,#93c5fd,#60a5fa)];
+  }
+
+  /* ===================== Clear Button ===================== */
+  .row-right {
+    @apply flex justify-end;
+  }
+  .input-with-clear {
+    @apply flex items-center gap-2;
+  }
+  .input-with-clear .input {
+    @apply flex-1;
+  }
+  .clear-link {
+    @apply border-0 bg-transparent text-[#007bff] cursor-pointer text-xs p-0 hover:text-[#d97706] hover:underline;
+  }
+  .clear-right {
+    @apply ml-auto;
   }
 
   /* ===================== Cards / Preview ===================== */
@@ -160,7 +173,7 @@ h3 {
     @apply bg-white text-[#111827] border border-slate-700 rounded-b-xl overflow-hidden;
   }
   .ql-toolbar.ql-snow {
-    @apply bg-[#0b1224] border border-slate-700 border-b-0 rounded-t-xl;
+    @apply bg-[#131e38] border border-slate-700! border-b-0 rounded-t-xl;
   }
   .ql-editor {
     @apply min-h-[120px] py-3 px-4 text-[#111827] text-sm leading-[1.6];
@@ -168,16 +181,14 @@ h3 {
   .ql-editor.ql-blank::before {
     @apply text-gray-400 not-italic;
   }
-
   .ql-snow .ql-picker,
   .ql-snow .ql-picker-options .ql-picker-item,
   .ql-snow .ql-picker-label {
     @apply text-slate-200;
   }
   .ql-snow .ql-picker-options {
-    @apply bg-[#0b1224] border-slate-700;
+    @apply bg-[#0b1224]! border-slate-700!;
   }
-
   .ql-editor a {
     @apply text-blue-300 underline;
   }

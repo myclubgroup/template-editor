@@ -892,7 +892,7 @@ export default function App() {
                 className="select"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
-                style={{ width: "50%" }}
+                style={{ width: "30%" }}
                 disabled={!Object.keys(brands).length}
               >
                 {Object.entries(brands).map(([key, b]) => (
@@ -909,9 +909,8 @@ export default function App() {
             </div>
 
             {/* Fixed fields */}
+            <div className="label">Snippet Text</div>
             <FieldText
-              label="Snippet Text"
-              name="SNIPPET"
               value={getInlineFence(html, "SNIPPET", blocks)}
               onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
               max={80}
@@ -1017,13 +1016,15 @@ export default function App() {
                         formats={quillFormats}
                       />
                       {s.content && (
-                        <button
-                          type="button"
-                          onClick={() => updateSection(s.id, { content: "" })}
-                          className="clear-link"
-                        >
-                          Clear
-                        </button>
+                        <div className="row-right">
+                          <button
+                            type="button"
+                            onClick={() => updateSection(s.id, { content: "" })}
+                            className="clear-link"
+                          >
+                            Clear
+                          </button>
+                        </div>
                       )}
                     </div>
                   ) : (
@@ -1032,42 +1033,46 @@ export default function App() {
                       <div style={{ display: "block", gap: 8 }}>
                         <div style={{ marginBottom: 8 }}>
                           <div className="label">Button text</div>
-                          <input
-                            className="input"
-                            type="text"
-                            value={s.label}
-                            onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                            style={{ width: "95%" }}
-                          />
-                          {s.label && (
-                            <button
-                              type="button"
-                              onClick={() => updateSection(s.id, { label: "" })}
-                              className="clear-link"
-                            >
-                              Clear
-                            </button>
-                          )}
+                          <div className="input-with-clear">
+                            <input
+                              className="input"
+                              type="text"
+                              value={s.label}
+                              onChange={(e) => updateSection(s.id, { label: e.target.value })}
+                              style={{ width: "100%" }} // or remove; .input-with-clear gives it flex:1
+                            />
+                            {s.label && (
+                              <button
+                                type="button"
+                                onClick={() => updateSection(s.id, { label: "" })}
+                                className="clear-link"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <div className="label">Button URL</div>
-                          <input
-                            className="input"
-                            type="text"
-                            value={s.href}
-                            onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                            style={{ width: "95%" }}
-                            placeholder="https://…"
-                          />
-                          {s.href && (
-                            <button
-                              type="button"
-                              onClick={() => updateSection(s.id, { href: "" })}
-                              className="clear-link"
-                            >
-                              Clear
-                            </button>
-                          )}
+                          <div className="input-with-clear">
+                            <input
+                              className="input"
+                              type="text"
+                              value={s.href}
+                              onChange={(e) => updateSection(s.id, { href: e.target.value })}
+                              placeholder="https://…"
+                              style={{ width: "100%" }}
+                            />
+                            {s.href && (
+                              <button
+                                type="button"
+                                onClick={() => updateSection(s.id, { href: "" })}
+                                className="clear-link"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1167,18 +1172,15 @@ export default function App() {
 }
 
 /* ===================== Small components & utils ===================== */
-function FieldText({ label, name, value, onChange, max }) {
+function FieldText({ value, onChange, max }) {
   const clearField = () => onChange("");
 
   return (
     <div style={{ marginBottom: 12, position: "relative" }}>
-      <label style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>
-        {label} <small style={{ color: "#666" }}>({name})</small>
-      </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
         <MergeInput value={value} onChange={onChange} maxLength={max} placeholder="" />
         {value && (
-          <button type="button" onClick={clearField} className="clear-link">
+          <button type="button" onClick={clearField} className="clear-link clear-right">
             Clear
           </button>
         )}
