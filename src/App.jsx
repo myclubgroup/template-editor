@@ -181,6 +181,14 @@ function escapeText(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Pure helper function to validate a color string and return it if it's valid
+ * or a fallback color if it's not.
+ */
+function safeColor(c, fallback = "#667eea") {
+  return isHex(c || "") ? c : fallback;
+}
+
 // Inline-only sanitizer for GREETING and SIGNOFF (bold/italic, links, <br>).
 // Unwraps block tags like <p>/<div>, strips attributes, preserves safe <a href>.
 // This is a more restrictive sanitizer than the one used for the main body text.
@@ -405,6 +413,8 @@ function sanitizeParaHtml(html) {
 }
 
 /* ===================== Section builders ===================== */
+// Helpers to build section HTML from section data
+// The button text should contain a full URL including protocol.
 const sectionHTML = {
   paragraph: (html) => `<div style="margin:0 0 24px 0; color:rgb(71, 85, 105)">${html}</div>`,
   cta: (label, href, color) =>
@@ -419,14 +429,6 @@ const sectionHTML = {
   </tr>
 </table>`.trim(),
 };
-
-/**
- * Pure helper function to validate a color string and return it if it's valid
- * or a fallback color if it's not.
- */
-function safeColor(c, fallback = "#667eea") {
-  return isHex(c || "") ? c : fallback;
-}
 
 /* ======================================================== */
 /* =                                                      = */
@@ -443,6 +445,8 @@ export default function App() {
   const [showHtmlModal, setShowHtmlModal] = useState(false);
   const [exportedHtml, setExportedHtml] = useState("");
 
+  // Sections state: array of {id,type,content,label,href,color}
+  // Set initial values with example content
   const [sections, setSections] = useState([
     {
       id: cryptoRandom(),
