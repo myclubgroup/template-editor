@@ -1,6 +1,6 @@
 {
   "name": "template-editor",
-  "version": "0.1.14",
+  "version": "0.1.17",
   "description": "A React-based template editor with rich text editing capabilities.",
   "private": true,
   "dependencies": {
@@ -13,8 +13,8 @@
     "dev": "vite",
     "lint": "eslint src --ext .js,.jsx",
     "format": "prettier --write .",
-    "prebuild": "yarn version --patch",
-    "build": "vite build",
+    "prebuild": "yarn version patch",
+    "build": "yarn prebuild && vite build",
     "preview": "vite preview",
     "deploy": "yarn build && gh-pages -d dist",
     "postinstall": "husky"
