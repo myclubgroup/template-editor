@@ -33,7 +33,15 @@ function buildInfoPlugin() {
     name: "build-info",
     // Make __BUILD_INFO__ available to your app at build time
     config() {
-      return { define: { __BUILD_INFO__: JSON.stringify(info) } };
+      // Define both a bare symbol and the globalThis property so code that
+      // references either `__BUILD_INFO__` or `globalThis.__BUILD_INFO__`
+      // will work in dev and in the production bundle (GH Pages).
+      return {
+        define: {
+          __BUILD_INFO__: JSON.stringify(info),
+          "globalThis.__BUILD_INFO__": JSON.stringify(info),
+        },
+      };
     },
     // Also drop files in the output for ops/debugging
     generateBundle() {
