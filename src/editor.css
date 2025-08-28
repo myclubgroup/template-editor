@@ -29,19 +29,17 @@ h3 {
 /* ===================== Layout Panels ===================== */
 @layer components {
   .editor-wrap {
-    @apply grid gap-4 p-4 grid-cols-[560px_1fr] max-[1100px]:grid-cols-1;
+    @apply h-screen w-full flex overflow-hidden p-4 gap-4;
   }
   .panel {
-    @apply relative bg-[var(--card)] text-[var(--text)] border border-[#1d2640] rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.35)];
+    @apply overflow-y-auto relative bg-[var(--card)] text-[var(--text)] border border-[#1d2640] rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.35)];
+    -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
   }
   .panel h2 {
     @apply m-0 py-[14px] px-4 border-b border-[#1d2640] bg-[linear-gradient(135deg,#101729,#0d1424)];
   }
   .panel-body {
     @apply py-[14px] px-4;
-  }
-  .pinnedExport {
-    @apply absolute top-3 right-3;
   }
 
   /* ===================== Typography / Helpers ===================== */
@@ -268,4 +266,27 @@ h3 {
 }
 .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke {
   stroke: #cbd5e1;
+}
+
+/* ===================== Scrollbars ===================== */
+.editor-wrap * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) var(--bg);
+}
+
+.editor-wrap *::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-wrap *::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.editor-wrap *::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 6px;
+}
+
+.editor-wrap *::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }

@@ -10,15 +10,17 @@
 
 - `src/App.jsx`: Core editor logic, Quill integration, template parsing, mail-merge tag management.
 - `public/`: Static assets (favicon, logos, manifest).
-- `template.txt`: Example template source (not always used at runtime).
+- `src/editor.css`: CSS for editor.
+- `src/template.html`: Template source.
+- `src/brands.json`: Brands source.
 - `tailwind.config.js`: Tailwind config for styling.
 - `vite.config.mjs`: Vite build config.
 
 ## Developer Workflows
 
-- Use `yarn run dev` to start the local dev server (Vite).
-- Use `yarn run build` to build for production (output in `dist/`).
-- Use `yarn run deploy` to deploy to Github Pages.
+- Use `yarn dev` to start the local dev server (Vite).
+- Use `yarn build` to build for production (output in `dist/`).
+- Use `yarn deploy` to deploy to Github Pages.
 - Node version managed via `nvm` (see README for setup).
 
 ## Patterns & Conventions
@@ -40,7 +42,7 @@
 
 ## Examples
 
-- To add a new editable section, update both the template HTML and the JS parsing logic in `src/App.jsx`.
+- To add a new editable section, update both the template HTML in `template.html` and if necessary the JS parsing logic in `src/App.jsx`.
 - To add a new mail-merge tag, update the `MERGE_TAGS` and `MERGE_GROUPS` arrays in `src/App.jsx`.
 
 ## Tips for AI Agents
