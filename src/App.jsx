@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import PropTypes from "prop-types";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
@@ -684,7 +685,7 @@ export default function App() {
     draggingId.current = id;
     e.dataTransfer.effectAllowed = "move";
   };
-  const onDragOver = (id) => (e) => {
+  const onDragOver = () => (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
@@ -860,7 +861,7 @@ export default function App() {
             h = replaceBlock(h, "SIGNOFF", `\n${escapeText(fields.SIGNOFF)}\n`);
           return h;
         });
-      } catch (e) {
+      } catch {
         alert("Invalid JSON file.");
       }
     };
@@ -891,7 +892,7 @@ export default function App() {
     try {
       await navigator.clipboard.writeText(exportedHtml);
       alert("HTML copied to clipboard!");
-    } catch (e) {
+    } catch {
       // Fallback to manual copying
       const el = document.querySelector("#exported-html");
       const selection = window.getSelection();
@@ -929,19 +930,32 @@ export default function App() {
           {/* Sticky title row */}
           <div className="sticky top-0 z-10">
             <div className="flex items-center justify-between h-[46px] px-4 border-b border-[#1d2640] bg-[linear-gradient(135deg,#101729,#0d1424)]">
-              <h2 className="m-0 p-0 text-inherit leading-none flex items-baseline gap-1">
-                Template Editor
-                {typeof __BUILD_INFO__ !== "undefined" && (
-                  <span style={{ fontSize: "9px", color: "#666" }}>
-                    v{__BUILD_INFO__.buildNumber || __BUILD_INFO__.version}
-                  </span>
-                )}
-              </h2>
+              {/* Title cluster with its own bottom border */}
+              <div className="flex items-end leading-none">
+                <img
+                  src="favicon-32x32.png"
+                  width="32"
+                  height="32"
+                  className="inline-block align-middle -m-0.5"
+                />
+                <span className="flex items-baseline gap-1">
+                  <h2>
+                    Template Editor
+                    {typeof globalThis.__BUILD_INFO__ !== "undefined" && (
+                      <span className="text-[9px] text-gray-500 self-end">
+                        v
+                        {globalThis.__BUILD_INFO__.buildNumber || globalThis.__BUILD_INFO__.version}
+                      </span>
+                    )}
+                  </h2>
+                </span>
+              </div>
               <button className="btn primary" onClick={openHtmlModal}>
                 📋 Export HTML
               </button>
             </div>
           </div>
+
           {/* Scrollable body */}
           <div className="panel-body overflow-y-auto">
             {/* Brand */}
@@ -973,6 +987,7 @@ export default function App() {
               value={getInlineFence(html, "SNIPPET", blocks)}
               onChange={(v) => handleFenceChange("SNIPPET", v, "text")}
               max={80}
+              counter={true}
             />
             <div style={{ marginBottom: 12 }}>
               <div className="label">Greeting</div>
@@ -989,7 +1004,7 @@ export default function App() {
               </div>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <div className="label">Sign-off Name</div>
+              <div className="label">Sign-off</div>
               <div className="inline-quill">
                 <ParagraphEditor
                   value={getFenceBody("SIGNOFF")}
@@ -1009,13 +1024,18 @@ export default function App() {
               className="row"
               style={{
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
+                gap: 12,
               }}
             >
-              <div className="label">
-                Body Sections <span className="badge">drag to reorder</span>
+              <div className="flex items-start justify-between w-full">
+                {/* Left: title + help */}
+                <div className="flex flex-col text-sm">
+                  <span className="label">Body Sections</span>
+                  <span className="help">drag to reorder</span>
+                </div>
               </div>
+              {/* Right: 2x2 grid */}
               <div className="stack">
                 <button className="btn add" onClick={addParagraph}>
                   ＋ Add Paragraph
@@ -1065,7 +1085,9 @@ export default function App() {
                           ? "Paragraph"
                           : s.type === "cta"
                             ? "CTA Button"
-                            : "Image + Text"}
+                            : s.type === "imgtext" && s.variant === "right"
+                              ? "Text + Img"
+                              : "Img + Text"}
                       </span>
                     </div>
                     <button
@@ -1333,8 +1355,9 @@ export default function App() {
 }
 
 /* ===================== Small components & utils ===================== */
-function FieldText({ value, onChange, max }) {
+function FieldText({ value, onChange, max, counter }) {
   const clearField = () => onChange("");
+  const charCount = value.length;
 
   return (
     <div style={{ marginBottom: 12, position: "relative" }}>
@@ -1346,9 +1369,11 @@ function FieldText({ value, onChange, max }) {
           </button>
         )}
       </div>
-      {max ? (
-        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>Max {max} characters</div>
-      ) : null}
+      {counter && (
+        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+          {charCount}/{max}
+        </div>
+      )}
     </div>
   );
 }
@@ -1705,3 +1730,25 @@ function MergeInput({ value, onChange, maxLength, placeholder }) {
     </div>
   );
 }
+
+// PropTypes for small components
+FieldText.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  max: PropTypes.number,
+  counter: PropTypes.bool,
+};
+
+ParagraphEditor.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  modules: PropTypes.object,
+  formats: PropTypes.array,
+};
+
+MergeInput.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  maxLength: PropTypes.number,
+  placeholder: PropTypes.string,
+};

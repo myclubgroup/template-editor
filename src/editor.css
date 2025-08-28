@@ -36,7 +36,7 @@ h3 {
     -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
   }
   .panel h2 {
-    @apply m-0 py-[14px] px-4 border-b border-[#1d2640] bg-[linear-gradient(135deg,#101729,#0d1424)];
+    @apply m-0 p-0 text-inherit leading-none flex items-center gap-1 border-b border-[#1d2640];
   }
   .panel-body {
     @apply py-[14px] px-4;
