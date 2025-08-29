@@ -436,7 +436,7 @@ const sectionHTML = {
   imgtext: ({ variant = "left", img = PLACEHOLDER_IMG, alt = "Image", html = "" }) => {
     const imgTd = `
       <td width="40%" class="col col-img" style="padding:0 12px 0 12px;">
-        <img src="${img}" alt="${escapeText(alt)}" style="display:block;border:0;">
+        <img src="${img}" alt="${escapeText(alt)}" width="150" style="display:block;border:0;width:150px;max-width:100%;height:auto;">
       </td>`;
     const textTd = `
       <td width="60%" class="col col-text" style="padding:0 12px 0 12px; color:rgb(71,85,105); font-size:14px; line-height:1.6;">
