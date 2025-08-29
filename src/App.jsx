@@ -451,6 +451,21 @@ const sectionHTML = {
   </tr>
 </table>`.trim();
   },
+
+  // NEW: separator — email-safe solid line (uses a tiny table row filled with background color)
+  separator: (color = "#e5e7eb") =>
+    `
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px; margin:0 auto;">
+  <tr>
+    <td style="padding:16px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="height:2px; background:${color}; line-height:1px; font-size:1px;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`.trim(),
 };
 
 /* ======================================================== */
@@ -644,6 +659,11 @@ export default function App() {
             html: safeHtml,
           });
         }
+        // NEW: separator rendering
+        if (s.type === "separator") {
+          const col = safeColor(s.color, brandColors.primary);
+          return sectionHTML.separator(col);
+        }
         return "";
       })
       .join("\n");
@@ -742,6 +762,17 @@ export default function App() {
       },
     ]);
 
+  // NEW: add a Separator section (uses brand primary as default color)
+  const addSeparator = () =>
+    setSections((s) => [
+      ...s,
+      {
+        id: cryptoRandom(),
+        type: "separator",
+        color: brandColors.primary || "#e5e7eb",
+      },
+    ]);
+
   const updateSection = (id, patch) =>
     setSections((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
@@ -837,6 +868,13 @@ export default function App() {
                 img: s.img || PLACEHOLDER_IMG,
                 alt: s.alt || "Image",
                 content: s.content || "",
+              };
+            }
+            if (s.type === "separator") {
+              return {
+                id: s.id || cryptoRandom(),
+                type: "separator",
+                color: isHex(s.color) ? s.color : undefined,
               };
             }
             // default to paragraph
@@ -1038,16 +1076,20 @@ export default function App() {
               {/* Right: 2x2 grid */}
               <div className="stack">
                 <button className="btn add" onClick={addParagraph}>
-                  ＋ Add Paragraph
+                  ＋ Paragraph
                 </button>
                 <button className="btn add" onClick={addCTA}>
-                  ＋ Add CTA
+                  ＋ CTA
                 </button>
                 <button className="btn add" onClick={() => addImgText("left")}>
                   ＋ Image+Text
                 </button>
                 <button className="btn add" onClick={() => addImgText("right")}>
                   ＋ Text+Image
+                </button>
+                {/* NEW: Separator button */}
+                <button className="btn add" onClick={addSeparator}>
+                  ＋ Separator
                 </button>
               </div>
             </div>
@@ -1085,9 +1127,13 @@ export default function App() {
                           ? "Paragraph"
                           : s.type === "cta"
                             ? "CTA Button"
-                            : s.type === "imgtext" && s.variant === "right"
-                              ? "Text + Img"
-                              : "Img + Text"}
+                            : s.type === "imgtext"
+                              ? s.variant === "right"
+                                ? "Text + Img"
+                                : "Img + Text"
+                              : s.type === "separator"
+                                ? "Separator"
+                                : "Unknown"}
                       </span>
                     </div>
                     <button
@@ -1212,6 +1258,35 @@ export default function App() {
                           </button>
                         </div>
                       )}
+                    </div>
+                  ) : s.type === "separator" ? (
+                    // Separator editor UI (color chooser + hex input)
+                    <div
+                      style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}
+                    >
+                      <div style={{ minWidth: 200 }}>
+                        <div className="label">Separator colour</div>
+                        <div
+                          className="hex"
+                          style={{ display: "flex", alignItems: "center", gap: 8 }}
+                        >
+                          <input
+                            type="color"
+                            value={safeColor(s.color, brandColors.primary)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value })}
+                            aria-label="Separator colour"
+                          />
+                          <input
+                            className="input"
+                            type="text"
+                            value={safeColor(s.color, brandColors.primary)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                            placeholder={brandColors.primary}
+                            style={{ width: 120 }}
+                          />
+                          <span className="help">Hex (#RRGGBB)</span>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <>
