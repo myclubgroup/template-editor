@@ -1057,42 +1057,124 @@ export default function App() {
             </div>
             <div className="separator" />
 
-            {/* Dynamic body sections */}
+            {/* Body Sections header (title above, buttons below) */}
             <div
               className="row"
               style={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
                 gap: 12,
               }}
             >
-              <div className="flex items-start justify-between w-full">
-                {/* Left: title + help */}
-                <div className="flex flex-col text-sm">
-                  <span className="label">Body Sections</span>
-                  <span className="help">drag to reorder</span>
-                </div>
+              <div className="flex flex-col text-sm">
+                <span className="label">Body Sections</span>
+                <span className="help">drag to reorder</span>
               </div>
-              {/* Right: 2x2 grid */}
               <div className="stack">
-                <button className="btn add" onClick={addParagraph}>
-                  ＋ Paragraph
+                <button
+                  className="btn add"
+                  onClick={addParagraph}
+                  aria-label="Add paragraph"
+                  title="Add paragraph"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="4" width="14" height="3" rx="1" fill="currentColor" />
+                    <rect x="3" y="10" width="14" height="3" rx="1" fill="currentColor" />
+                    <rect x="3" y="16" width="10" height="3" rx="1" fill="currentColor" />
+                  </svg>
                 </button>
-                <button className="btn add" onClick={addCTA}>
-                  ＋ CTA
+                <button className="btn add" onClick={addCTA} aria-label="Add CTA" title="Add CTA">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="2"
+                      y="7"
+                      width="20"
+                      height="10"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      fill="none"
+                    />
+                    <path
+                      d="M8 12h8"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </button>
-                <button className="btn add" onClick={() => addImgText("left")}>
-                  ＋ Image+Text
+                <button
+                  className="btn add"
+                  onClick={() => addImgText("left")}
+                  aria-label="Add image + text"
+                  title="Add image + text"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="4" width="8" height="12" rx="1" fill="currentColor" />
+                    <path d="M14 6h6v9h-6z" stroke="currentColor" strokeWidth="1.2" fill="none" />
+                    <circle cx="7" cy="8" r="1.2" fill="white" />
+                  </svg>
                 </button>
-                <button className="btn add" onClick={() => addImgText("right")}>
-                  ＋ Text+Image
+                <button
+                  className="btn add"
+                  onClick={() => addImgText("right")}
+                  aria-label="Add text + image"
+                  title="Add text + image"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 6h6v9H3z" stroke="currentColor" strokeWidth="1.2" fill="none" />
+                    <rect x="14" y="4" width="7" height="12" rx="1" fill="currentColor" />
+                    <circle cx="17.5" cy="7" r="1.2" fill="white" />
+                  </svg>
                 </button>
-                {/* NEW: Separator button */}
-                <button className="btn add" onClick={addSeparator}>
-                  ＋ Separator
+                <button
+                  className="btn add"
+                  onClick={addSeparator}
+                  aria-label="Add separator"
+                  title="Add separator"
+                >
+                  <svg
+                    width="20"
+                    height="8"
+                    viewBox="0 0 20 8"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect x="0" y="3" width="20" height="2" rx="1" fill="currentColor" />
+                  </svg>
                 </button>
               </div>
             </div>
+            <div className="separator" />
 
             <div>
               {sections.map((s) => (

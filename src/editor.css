@@ -191,7 +191,7 @@ h3 {
     @apply text-blue-300 underline;
   }
   .ql-container.ql-snow:focus-within {
-    @apply outline outline-2 outline-blue-400 outline-offset-0 border-blue-400 rounded-b-xl;
+    @apply outline-2 outline-blue-400 outline-offset-0 border-blue-400 rounded-b-xl;
   }
 
   /* Inline Quill */
