@@ -942,6 +942,21 @@ export default function App() {
     }
   };
 
+  // Simple HTML minifier used by the modal 'Minify' action.
+  // - removes newlines/tabs
+  // - collapses whitespace between tags
+  // - trims leading/trailing whitespace
+  const minifyHtml = (raw) => {
+    if (!raw) return raw;
+    // Remove newlines/tabs and collapse multiple spaces
+    let s = String(raw).replace(/\r|\n|\t/g, "");
+    // Remove whitespace between tags
+    s = s.replace(/>\s+</g, "><");
+    // Collapse multiple spaces to a single space (keeps content readable)
+    s = s.replace(/ {2,}/g, " ");
+    return s.trim();
+  };
+
   /**
    * Downloads the exported HTML content as a file.
    * The file name is set to "email-<brand>.html".
@@ -1066,10 +1081,7 @@ export default function App() {
                 gap: 12,
               }}
             >
-              <div className="flex flex-col text-sm">
-                <span className="label">Body Sections</span>
-                <span className="help">drag to reorder</span>
-              </div>
+              <div className="label">Body Sections</div>
               <div className="stack">
                 <button
                   className="btn add"
@@ -1183,7 +1195,6 @@ export default function App() {
                   className="card paragraph-section"
                   onDragOver={onDragOver(s.id)}
                   onDrop={onDrop(s.id)}
-                  title="Drag to reorder"
                 >
                   <div className="head">
                     <div
@@ -1200,6 +1211,7 @@ export default function App() {
                         onDragStart={onDragStart(s.id)}
                         onDragEnd={() => (draggingId.current = null)}
                         aria-label="Drag section"
+                        title="Drag to reorder"
                         type="button"
                       >
                         ☰
@@ -1494,9 +1506,16 @@ export default function App() {
               </button>
             </div>
             <div className="modal-body">
-              <textarea readOnly value={exportedHtml} />
+              <textarea id="exported-html" readOnly value={exportedHtml} />
             </div>
             <div className="actions">
+              <button
+                className="btn info"
+                onClick={() => setExportedHtml((cur) => minifyHtml(cur))}
+                title="Minify the HTML in-place"
+              >
+                Minify
+              </button>
               <button className="btn info" onClick={copyHtmlToClipboard}>
                 Copy to clipboard
               </button>

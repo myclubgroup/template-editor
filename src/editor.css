@@ -55,9 +55,6 @@ h3 {
   .separator {
     @apply h-px bg-[#1d2640] my-3;
   }
-  small.k {
-    @apply text-[#b9c2d0];
-  }
 
   /* ===================== Inputs / Buttons ===================== */
   .input,
@@ -89,7 +86,7 @@ h3 {
     @apply border-[#7f1d1d] hover:bg-[#b91c1c] hover:text-white;
   }
   .btn.add {
-    @apply border-[#065f46] hover:bg-[linear-gradient(135deg,#10b981,#059669)] hover:text-white hover:border-transparent;
+    @apply px-5 border-[#065f46] hover:bg-[linear-gradient(135deg,#10b981,#059669)] hover:text-white hover:border-transparent;
   }
   .btn.info {
     @apply text-[#0b1220] border-transparent bg-[linear-gradient(135deg,#60a5fa,#38bdf8)] hover:bg-[linear-gradient(135deg,#93c5fd,#60a5fa)];
