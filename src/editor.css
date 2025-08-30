@@ -134,13 +134,14 @@ h3 {
 
   /* ===================== Color Picker Row ===================== */
   .colorRow {
-    @apply grid grid-cols-[110px_1fr] gap-2 items-center mt-2;
-  }
-  .colorRow input[type="color"] {
-    @apply w-11 h-9 border-0 bg-transparent p-0 cursor-pointer;
+    @apply gap-2 items-center mt-2;
   }
   .colorRow .hex {
     @apply flex gap-2 items-center;
+  }
+  .color-square {
+    @apply w-7 h-7 box-border cursor-pointer p-0 border-0;
+    background: transparent;
   }
 
   /* ===================== Modal ===================== */

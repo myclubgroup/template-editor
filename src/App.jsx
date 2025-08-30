@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import ReactQuill from "react-quill-new";
+import { ColorPicker, useColor, ColorService } from "react-color-palette";
+import "react-color-palette/css";
 import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
 import brandsData from "./brands.json";
@@ -482,6 +484,51 @@ export default function App() {
   // Modal state for raw HTML
   const [showHtmlModal, setShowHtmlModal] = useState(false);
   const [exportedHtml, setExportedHtml] = useState("");
+  // Color picker popover state
+  const [pickerOpenFor, setPickerOpenFor] = useState(null); // section id or null
+  // shared color object for the popover (useColor returns [color, setColor])
+  const [pickerColorObj, setPickerColorObj] = useColor("#ffffff");
+  const [pickerPosition, setPickerPosition] = useState(null); // {top,left} in px (fixed)
+
+  // Open the color picker for a given section id and base hex color, positioning the popover so it's always visible
+  const openColorPicker = (id, hex, ev) => {
+    try {
+      const colorObj = ColorService.convert("hex", hex);
+      setPickerColorObj(colorObj);
+    } catch {
+      // fallback to raw hex
+      setPickerColorObj(ColorService.convert("hex", "#ffffff"));
+    }
+    setPickerOpenFor(id);
+
+    // compute position from event target rect
+    const rect = ev?.currentTarget?.getBoundingClientRect?.();
+    const pickerW = 220;
+    const pickerH = 160; // approximate (height prop used earlier)
+    const gap = 8;
+    let top = gap;
+    let left = gap;
+    if (rect) {
+      // Place the popover near the top of the viewport so it never appears off-screen
+      // (doesn't need to sit under the swatch). Clamp to viewport height.
+      // desiredTop: center the picker vertically in the viewport
+      const desiredTop = Math.round(window.innerHeight / 2 - pickerH / 2);
+      top = Math.max(gap, Math.min(desiredTop, window.innerHeight - pickerH - gap));
+
+      // Keep it horizontally near the swatch but clamp into viewport
+      left = rect.left;
+      if (left + pickerW > window.innerWidth) left = window.innerWidth - pickerW - gap;
+      left = Math.max(gap, left);
+    } else {
+      // Fallback: center horizontally near the top
+      top = Math.max(gap, Math.min(80, window.innerHeight - pickerH - gap));
+      left = Math.max(
+        gap,
+        Math.min((window.innerWidth - pickerW) / 2, window.innerWidth - pickerW - gap),
+      );
+    }
+    setPickerPosition({ top, left });
+  };
 
   // Sections state: array of {id,type,content,label,href,color}
   // Set initial values with example content
@@ -1354,47 +1401,71 @@ export default function App() {
                       )}
                     </div>
                   ) : s.type === "separator" ? (
-                    // Separator editor UI (color chooser + hex input)
-                    <div
-                      style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}
-                    >
-                      <div style={{ minWidth: 200 }}>
-                        <div className="label">Separator colour</div>
-                        <div
-                          className="hex"
-                          style={{ display: "flex", alignItems: "center", gap: 8 }}
-                        >
-                          <input
-                            type="color"
-                            value={safeColor(s.color, brandColors.primary)}
-                            onChange={(e) => updateSection(s.id, { color: e.target.value })}
-                            aria-label="Separator colour"
-                          />
-                          <input
-                            className="input"
-                            type="text"
-                            value={safeColor(s.color, brandColors.primary)}
-                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
-                            placeholder={brandColors.primary}
-                            style={{ width: 120 }}
-                          />
-                          <span className="help">Hex (#RRGGBB)</span>
-                        </div>
+                    // Separator editor UI (color chooser + hex input) using SketchPicker
+                    <div className="colorRow">
+                      <div className="hex">
+                        <button
+                          type="button"
+                          aria-label="Separator colour"
+                          title="Change separator color"
+                          className="color-square"
+                          onClick={() => {
+                            const cur = safeColor(s.color, brandColors.primary);
+                            setPickerOpenFor(s.id);
+                            setPickerColorObj(ColorService.convert("hex", cur));
+                          }}
+                          style={{ background: safeColor(s.color, brandColors.primary) }}
+                        />
+                        <input
+                          className="input"
+                          type="text"
+                          value={safeColor(s.color, brandColors.primary)}
+                          onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                          placeholder={brandColors.primary}
+                          style={{ width: 120 }}
+                        />
+                        <span className="help">Hex (#RRGGBB)</span>
                       </div>
+                      {pickerOpenFor === s.id && (
+                        <div
+                          style={{
+                            position: "fixed",
+                            top: pickerPosition?.top,
+                            left: pickerPosition?.left,
+                            zIndex: 140,
+                          }}
+                        >
+                          <div
+                            style={{ position: "fixed", inset: 0 }}
+                            onClick={() => setPickerOpenFor(null)}
+                          />
+                          <ColorPicker
+                            width={220}
+                            height={140}
+                            hideAlpha={true}
+                            hideInput={["rgb", "hsv"]}
+                            color={pickerColorObj}
+                            onChange={(col) => setPickerColorObj(col)}
+                            onChangeComplete={(col) => {
+                              const val = col.hex;
+                              updateSection(s.id, { color: val });
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>
                       {/* CTA fields stacked as block; inputs at 95% width */}
                       <div style={{ display: "block", gap: 8 }}>
                         <div style={{ marginBottom: 8 }}>
-                          <div className="label">Button text</div>
+                          <div className="label">Text</div>
                           <div className="input-with-clear">
                             <input
                               className="input"
                               type="text"
                               value={s.label}
                               onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                              style={{ width: "100%" }} // or remove; .input-with-clear gives it flex:1
                             />
                             {s.label && (
                               <button
@@ -1408,7 +1479,7 @@ export default function App() {
                           </div>
                         </div>
                         <div>
-                          <div className="label">Button URL</div>
+                          <div className="label">URL</div>
                           <div className="input-with-clear">
                             <input
                               className="input"
@@ -1431,15 +1502,18 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* CTA Color Picker */}
+                      {/* CTA Color Picker: no label, square color picker */}
                       <div className="colorRow">
-                        <div className="label">Button colour</div>
                         <div className="hex">
-                          <input
-                            type="color"
-                            value={safeColor(s.color, brandDefaults.ctaColor)}
-                            onChange={(e) => updateSection(s.id, { color: e.target.value })}
+                          <button
+                            type="button"
                             aria-label="CTA colour"
+                            title="Change CTA color"
+                            className="color-square"
+                            onClick={(ev) =>
+                              openColorPicker(s.id, safeColor(s.color, brandDefaults.ctaColor), ev)
+                            }
+                            style={{ background: safeColor(s.color, brandDefaults.ctaColor) }}
                           />
                           <input
                             className="input"
@@ -1455,6 +1529,33 @@ export default function App() {
                           />
                           <span className="help">Hex (#RRGGBB)</span>
                         </div>
+                        {pickerOpenFor === s.id && (
+                          <div
+                            style={{
+                              position: "fixed",
+                              top: pickerPosition?.top,
+                              left: pickerPosition?.left,
+                              zIndex: 140,
+                            }}
+                          >
+                            <div
+                              style={{ position: "fixed", inset: 0 }}
+                              onClick={() => setPickerOpenFor(null)}
+                            />
+                            <ColorPicker
+                              width={220}
+                              height={140}
+                              hideAlpha={true}
+                              hideInput={["rgb", "hsv"]}
+                              color={pickerColorObj}
+                              onChange={(col) => setPickerColorObj(col)}
+                              onChangeComplete={(col) => {
+                                const val = col.hex;
+                                updateSection(s.id, { color: val });
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
