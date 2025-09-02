@@ -468,6 +468,16 @@ const sectionHTML = {
     </td>
   </tr>
 </table>`.trim(),
+  // NEW: full-width header
+  fullwidth: ({ html = "", color = "#667eea", textColor = "#ffffff", padding = 0 }) =>
+    `
+  </tr>
+  <tr>
+    <td align="center" style="${padding}px; margin:0; background:${color}; color:${textColor}; text-align:center;">
+      ${html}
+    </td>
+  </tr>
+  <tr>`.trim(),
 };
 
 /* ======================================================== */
@@ -684,7 +694,13 @@ export default function App() {
 
   // Rebuild SECTIONS when sections change
   useEffect(() => {
+    // Separate fullwidth bands from inline body sections so we can inject
+    // them outside the SECTIONS fence (directly under HEADER or above FOOTER)
+    const headerBands = [];
+    const footerBands = [];
+
     const bodyHtml = sections
+      .filter((s) => s.type !== "fullwidth")
       .map((s) => {
         if (s.type === "paragraph") {
           const safe = sanitizeParaHtml(s.content || "");
@@ -693,10 +709,9 @@ export default function App() {
         if (s.type === "cta") {
           const label = s.label || "Click here";
           const href = s.href || "https://example.com";
-          const finalColor = safeColor(s.color, brandDefaults.ctaColor); // brand-aware fallback
+          const finalColor = safeColor(s.color, brandDefaults.ctaColor);
           return sectionHTML.cta(label, href, finalColor);
         }
-        // NEW
         if (s.type === "imgtext") {
           const safeHtml = sanitizeParaHtml(s.content || "");
           return sectionHTML.imgtext({
@@ -706,7 +721,6 @@ export default function App() {
             html: safeHtml,
           });
         }
-        // NEW: separator rendering
         if (s.type === "separator") {
           const col = safeColor(s.color, brandColors.primary);
           return sectionHTML.separator(col);
@@ -715,7 +729,45 @@ export default function App() {
       })
       .join("\n");
 
-    setHtml((prev) => replaceBlock(prev, "SECTIONS", `\n${bodyHtml}\n`));
+    // Build fullwidth band HTML separately and sort into header/footer
+    sections.forEach((s) => {
+      if (s.type !== "fullwidth") return;
+      const col = safeColor(s.color, brandColors.primary);
+      const textColor = safeColor(s.textColor, "#ffffff");
+      const htmlSafe = sanitizeParaHtml(s.html || "");
+      const pad = Number.isFinite(Number(s.padding)) ? Number(s.padding) : 0;
+      const band = sectionHTML.fullwidth({ html: htmlSafe, color: col, textColor, padding: pad });
+      if (s.location === "footer") footerBands.push(band);
+      else headerBands.push(band);
+    });
+
+    setHtml((prev) => {
+      let next = prev;
+      // Replace the SECTIONS fence with the body HTML (non-fullwidth sections)
+      next = replaceBlock(next, "SECTIONS", `\n${bodyHtml}\n`);
+
+      // Inject headerBands immediately after HEADER fence
+      if (headerBands.length) {
+        const hBlocks = getBlocks(next);
+        if (hBlocks.find((blk) => blk.name === "HEADER")) {
+          // Append headerBands after the HEADER content
+          const headerHtml = headerBands.join("\n");
+          next = replaceBlock(next, "HEADER", `\n${brands[brand]?.HEADER || ""}\n${headerHtml}\n`);
+        }
+      }
+
+      // Inject footerBands immediately before FOOTER fence (prepend onto FOOTER)
+      if (footerBands.length) {
+        const fBlocks = getBlocks(next);
+        if (fBlocks.find((blk) => blk.name === "FOOTER")) {
+          const footerHtml = footerBands.join("\n");
+          // Prepend footer bands before the existing FOOTER content
+          next = replaceBlock(next, "FOOTER", `\n${footerHtml}\n${brands[brand]?.FOOTER || ""}\n`);
+        }
+      }
+
+      return next;
+    });
   }, [sections, brandDefaults.ctaColor]);
 
   /**
@@ -806,6 +858,23 @@ export default function App() {
         img: PLACEHOLDER_IMG,
         alt: "Image",
         content: "<h2>Your headline</h2><p>Add your supporting copy here.</p>",
+      },
+    ]);
+
+  // NEW: add a full-width header
+  const addFullWidth = () =>
+    setSections((s) => [
+      ...s,
+      {
+        id: cryptoRandom(),
+        type: "fullwidth",
+        color: brandColors.primary || "#667eea",
+        textColor: "#ffffff",
+        html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
+        padding: 12,
+        // location controls whether the band appears under HEADER or above FOOTER
+        // default to placing new bands directly under HEADER so they span full width
+        location: "header",
       },
     ]);
 
@@ -922,6 +991,17 @@ export default function App() {
                 id: s.id || cryptoRandom(),
                 type: "separator",
                 color: isHex(s.color) ? s.color : undefined,
+              };
+            }
+            if (s.type === "fullwidth") {
+              return {
+                id: s.id || cryptoRandom(),
+                type: "fullwidth",
+                color: isHex(s.color) ? s.color : undefined,
+                textColor: isHex(s.textColor) ? s.textColor : undefined,
+                html: s.html || "",
+                padding: Number.isFinite(Number(s.padding)) ? Number(s.padding) : 0,
+                location: s.location === "footer" ? "footer" : "header",
               };
             }
             // default to paragraph
@@ -1231,6 +1311,23 @@ export default function App() {
                     <rect x="0" y="3" width="20" height="2" rx="1" fill="currentColor" />
                   </svg>
                 </button>
+                <button
+                  className="btn add"
+                  onClick={addFullWidth}
+                  aria-label="Add full width band"
+                  title="Add full width band"
+                >
+                  <svg
+                    width="18"
+                    height="14"
+                    viewBox="0 0 18 14"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <rect x="0" y="2" width="18" height="10" rx="1" fill="currentColor" />
+                  </svg>
+                </button>
               </div>
             </div>
             <div className="separator" />
@@ -1274,8 +1371,21 @@ export default function App() {
                                 : "Img + Text"
                               : s.type === "separator"
                                 ? "Separator"
-                                : "Unknown"}
+                                : s.type === "fullwidth"
+                                  ? "Full-width band"
+                                  : "Unknown"}
                       </span>
+                      {s.type === "fullwidth" && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: s.location === "footer" ? "#ef4444" : "#10b981",
+                            marginLeft: 8,
+                          }}
+                        >
+                          {s.location === "footer" ? "Footer" : "Header"}
+                        </span>
+                      )}
                     </div>
                     <button
                       className="btn remove"
@@ -1401,7 +1511,6 @@ export default function App() {
                       )}
                     </div>
                   ) : s.type === "separator" ? (
-                    // Separator editor UI (color chooser + hex input) using SketchPicker
                     <div className="colorRow">
                       <div className="hex">
                         <button
@@ -1446,13 +1555,98 @@ export default function App() {
                             hideInput={["rgb", "hsv"]}
                             color={pickerColorObj}
                             onChange={(col) => setPickerColorObj(col)}
-                            onChangeComplete={(col) => {
-                              const val = col.hex;
-                              updateSection(s.id, { color: val });
-                            }}
+                            onChangeComplete={(col) => updateSection(s.id, { color: col.hex })}
                           />
                         </div>
                       )}
+                    </div>
+                  ) : s.type === "fullwidth" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div className="label">Band HTML (simple inline HTML)</div>
+                      <div>
+                        <input
+                          className="input"
+                          type="text"
+                          value={s.html || ""}
+                          onChange={(e) => updateSection(s.id, { html: e.target.value })}
+                          placeholder="Bold headline or small content"
+                          style={{ width: "100%" }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <div>
+                          <div className="label">Background colour</div>
+                          <div
+                            className="hex"
+                            style={{ display: "flex", alignItems: "center", gap: 8 }}
+                          >
+                            <input
+                              type="color"
+                              value={safeColor(s.color, brandColors.primary)}
+                              onChange={(e) => updateSection(s.id, { color: e.target.value })}
+                              aria-label="Background colour"
+                            />
+                            <input
+                              className="input"
+                              type="text"
+                              value={safeColor(s.color, brandColors.primary)}
+                              onChange={(e) =>
+                                updateSection(s.id, { color: e.target.value.trim() })
+                              }
+                              placeholder={brandColors.primary}
+                              style={{ width: 120 }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="label">Text colour</div>
+                          <div
+                            className="hex"
+                            style={{ display: "flex", alignItems: "center", gap: 8 }}
+                          >
+                            <input
+                              type="color"
+                              value={safeColor(s.textColor, "#ffffff")}
+                              onChange={(e) => updateSection(s.id, { textColor: e.target.value })}
+                              aria-label="Text colour"
+                            />
+                            <input
+                              className="input"
+                              type="text"
+                              value={safeColor(s.textColor, "#ffffff")}
+                              onChange={(e) =>
+                                updateSection(s.id, { textColor: e.target.value.trim() })
+                              }
+                              placeholder="#ffffff"
+                              style={{ width: 120 }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ minWidth: 120 }}>
+                          <div className="label">Padding (px)</div>
+                          <input
+                            className="input"
+                            type="number"
+                            value={s.padding ?? 0}
+                            onChange={(e) =>
+                              updateSection(s.id, { padding: Number(e.target.value) })
+                            }
+                            style={{ width: 80 }}
+                          />
+                        </div>
+                        <div style={{ minWidth: 160 }}>
+                          <div className="label">Place band</div>
+                          <select
+                            className="select"
+                            value={s.location || "header"}
+                            onChange={(e) => updateSection(s.id, { location: e.target.value })}
+                            style={{ width: 140 }}
+                          >
+                            <option value="header">Header (full-width)</option>
+                            <option value="footer">Footer (full-width)</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <>
