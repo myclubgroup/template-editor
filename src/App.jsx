@@ -10,6 +10,8 @@ import baseTemplate from "./template.html?raw";
 
 /* ===================== DEFAULTS ===================== */
 const DEFAULT_CTA_COLOR = "#15ad36";
+const HEADER_BAND_DEFAULT = "#10b981";
+const FOOTER_BAND_DEFAULT = "#ef4444";
 const PLACEHOLDER_IMG =
   "data:image/png;base64,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";
 
@@ -33,15 +35,9 @@ const MERGE_GROUPS = [
       { label: "Deal Owner", value: "${Deals.Deal Owner}" },
       { label: "Club Name", value: "${Deals.Club Name}" },
       { label: "Deal Name", value: "${Deals.Deal Name}" },
-      {
-        label: "Unique Deal Reference",
-        value: "${Deals.Unique Deal Reference}",
-      },
+      { label: "Unique Deal Reference", value: "${Deals.Unique Deal Reference}" },
       { label: "Invoice Number", value: "${Deals.Invoice Number}" },
-      {
-        label: "Delivery Contact Name",
-        value: "${Deals.Delivery Contact Name}",
-      },
+      { label: "Delivery Contact Name", value: "${Deals.Delivery Contact Name}" },
     ],
   },
   {
@@ -469,12 +465,29 @@ const sectionHTML = {
   </tr>
 </table>`.trim(),
   // NEW: full-width header
-  fullwidth: ({ html = "", color = "#667eea", textColor = "#ffffff", padding = 0 }) =>
+  fullwidthheader: ({
+    html = "",
+    color = HEADER_BAND_DEFAULT,
+    textColor = "#ffffff",
+    fontSize = 18,
+  }) =>
     `
   </tr>
   <tr>
-    <td align="center" style="${padding}px; margin:0; background:${color}; color:${textColor}; text-align:center;">
-      ${html}
+    <td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
+      <div style="font-size:${fontSize}px;">${html}</div>
+    </td>`.trim(),
+
+  // NEW: full-width footer
+  fullwidthfooter: ({
+    html = "",
+    color = FOOTER_BAND_DEFAULT,
+    textColor = "#ffffff",
+    fontSize = 12,
+  }) =>
+    `
+    <td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
+      <div style="font-size:${fontSize}px;">${html}</div>
     </td>
   </tr>
   <tr>`.trim(),
@@ -499,6 +512,8 @@ export default function App() {
   // shared color object for the popover (useColor returns [color, setColor])
   const [pickerColorObj, setPickerColorObj] = useColor("#ffffff");
   const [pickerPosition, setPickerPosition] = useState(null); // {top,left} in px (fixed)
+  // For bands only: which field is active for the color picker ("bg" | "text")
+  const [pickerBandField, setPickerBandField] = useState(null);
 
   // Open the color picker for a given section id and base hex color, positioning the popover so it's always visible
   const openColorPicker = (id, hex, ev) => {
@@ -581,6 +596,10 @@ export default function App() {
         'In the meantime, if you\'d like to speak with someone, feel free to call us at 01883 772929 (Monday-Friday, 9am-5pm) or email us at <a href="mailto:customerservices@myclub.group">customerservices@myclub.group</a>.',
     },
   ]);
+
+  // Track collapse state for header/footer band editors
+  const [headerBandOpen, setHeaderBandOpen] = useState(true);
+  const [footerBandOpen, setFooterBandOpen] = useState(true);
 
   const blocks = useMemo(() => getBlocks(html), [html]);
   const getBlockValue = (name) => (blocks.find((b) => b.name === name)?.body || "").trim();
@@ -700,7 +719,7 @@ export default function App() {
     const footerBands = [];
 
     const bodyHtml = sections
-      .filter((s) => s.type !== "fullwidth")
+      .filter((s) => s.type !== "fullwidthheader" && s.type !== "fullwidthfooter")
       .map((s) => {
         if (s.type === "paragraph") {
           const safe = sanitizeParaHtml(s.content || "");
@@ -731,14 +750,35 @@ export default function App() {
 
     // Build fullwidth band HTML separately and sort into header/footer
     sections.forEach((s) => {
-      if (s.type !== "fullwidth") return;
-      const col = safeColor(s.color, brandColors.primary);
+      if (s.type !== "fullwidthheader" && s.type !== "fullwidthfooter") return;
+      const col = safeColor(
+        s.color,
+        s.type === "fullwidthheader" ? HEADER_BAND_DEFAULT : FOOTER_BAND_DEFAULT,
+      );
       const textColor = safeColor(s.textColor, "#ffffff");
       const htmlSafe = sanitizeParaHtml(s.html || "");
-      const pad = Number.isFinite(Number(s.padding)) ? Number(s.padding) : 0;
-      const band = sectionHTML.fullwidth({ html: htmlSafe, color: col, textColor, padding: pad });
-      if (s.location === "footer") footerBands.push(band);
-      else headerBands.push(band);
+      const fontSize = Number.isFinite(Number(s.fontSize))
+        ? Number(s.fontSize)
+        : s.type === "fullwidthheader"
+          ? 18
+          : 12;
+      if (s.type === "fullwidthheader") {
+        const band = sectionHTML.fullwidthheader({
+          html: htmlSafe,
+          color: col,
+          textColor,
+          fontSize,
+        });
+        headerBands.push(band);
+      } else {
+        const band = sectionHTML.fullwidthfooter({
+          html: htmlSafe,
+          color: col,
+          textColor,
+          fontSize,
+        });
+        footerBands.push(band);
+      }
     });
 
     setHtml((prev) => {
@@ -746,24 +786,17 @@ export default function App() {
       // Replace the SECTIONS fence with the body HTML (non-fullwidth sections)
       next = replaceBlock(next, "SECTIONS", `\n${bodyHtml}\n`);
 
-      // Inject headerBands immediately after HEADER fence
-      if (headerBands.length) {
-        const hBlocks = getBlocks(next);
-        if (hBlocks.find((blk) => blk.name === "HEADER")) {
-          // Append headerBands after the HEADER content
-          const headerHtml = headerBands.join("\n");
-          next = replaceBlock(next, "HEADER", `\n${brands[brand]?.HEADER || ""}\n${headerHtml}\n`);
-        }
+      // Always rebuild HEADER and FOOTER with current brand HTML plus any bands (or none)
+      const blocksNow = getBlocks(next);
+      const headerExists = blocksNow.find((blk) => blk.name === "HEADER");
+      const footerExists = blocksNow.find((blk) => blk.name === "FOOTER");
+      const headerHtml = headerBands.join("\n");
+      const footerHtml = footerBands.join("\n");
+      if (headerExists) {
+        next = replaceBlock(next, "HEADER", `\n${brands[brand]?.HEADER || ""}\n${headerHtml}\n`);
       }
-
-      // Inject footerBands immediately before FOOTER fence (prepend onto FOOTER)
-      if (footerBands.length) {
-        const fBlocks = getBlocks(next);
-        if (fBlocks.find((blk) => blk.name === "FOOTER")) {
-          const footerHtml = footerBands.join("\n");
-          // Prepend footer bands before the existing FOOTER content
-          next = replaceBlock(next, "FOOTER", `\n${footerHtml}\n${brands[brand]?.FOOTER || ""}\n`);
-        }
+      if (footerExists) {
+        next = replaceBlock(next, "FOOTER", `\n${footerHtml}\n${brands[brand]?.FOOTER || ""}\n`);
       }
 
       return next;
@@ -861,22 +894,45 @@ export default function App() {
       },
     ]);
 
-  // NEW: add a full-width header
-  const addFullWidth = () =>
-    setSections((s) => [
-      ...s,
-      {
-        id: cryptoRandom(),
-        type: "fullwidth",
-        color: brandColors.primary || "#667eea",
-        textColor: "#ffffff",
-        html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
-        padding: 12,
-        // location controls whether the band appears under HEADER or above FOOTER
-        // default to placing new bands directly under HEADER so they span full width
-        location: "header",
-      },
-    ]);
+  // NEW: add a full-width header band
+  const addFullWidthHeader = () =>
+    setSections((s) => {
+      if (s.some((x) => x.type === "fullwidthheader")) return s;
+      const next = [
+        ...s,
+        {
+          id: cryptoRandom(),
+          type: "fullwidthheader",
+          color: HEADER_BAND_DEFAULT,
+          textColor: "#ffffff",
+          html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
+          fontSize: 18,
+        },
+      ];
+      // ensure header band starts expanded when added
+      setHeaderBandOpen(true);
+      return next;
+    });
+
+  // NEW: add a full-width footer band
+  const addFullWidthFooter = () =>
+    setSections((s) => {
+      if (s.some((x) => x.type === "fullwidthfooter")) return s;
+      const next = [
+        ...s,
+        {
+          id: cryptoRandom(),
+          type: "fullwidthfooter",
+          color: FOOTER_BAND_DEFAULT,
+          textColor: "#ffffff",
+          html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
+          fontSize: 12,
+        },
+      ];
+      // ensure footer band starts expanded when added
+      setFooterBandOpen(true);
+      return next;
+    });
 
   // NEW: add a Separator section (uses brand primary as default color)
   const addSeparator = () =>
@@ -966,7 +1022,7 @@ export default function App() {
 
         // 2) Sections: keep valid colors; otherwise leave undefined so render falls back to brand default
         if (Array.isArray(data.sections)) {
-          const fixed = data.sections.map((s) => {
+          const mapped = data.sections.map((s) => {
             if (s.type === "cta") {
               return {
                 id: s.id || cryptoRandom(),
@@ -993,15 +1049,23 @@ export default function App() {
                 color: isHex(s.color) ? s.color : undefined,
               };
             }
-            if (s.type === "fullwidth") {
+            if (
+              s.type === "fullwidth" ||
+              s.type === "fullwidthheader" ||
+              s.type === "fullwidthfooter"
+            ) {
+              const isFooter = s.type === "fullwidthfooter" || s.location === "footer";
               return {
                 id: s.id || cryptoRandom(),
-                type: "fullwidth",
+                type: isFooter ? "fullwidthfooter" : "fullwidthheader",
                 color: isHex(s.color) ? s.color : undefined,
                 textColor: isHex(s.textColor) ? s.textColor : undefined,
                 html: s.html || "",
-                padding: Number.isFinite(Number(s.padding)) ? Number(s.padding) : 0,
-                location: s.location === "footer" ? "footer" : "header",
+                fontSize: Number.isFinite(Number(s.fontSize))
+                  ? Number(s.fontSize)
+                  : isFooter
+                    ? 12
+                    : 18,
               };
             }
             // default to paragraph
@@ -1011,6 +1075,24 @@ export default function App() {
               content: s.content || "",
             };
           });
+          // Enforce single header/footer fullwidth by keeping the first of each
+          const seen = { header: false, footer: false };
+          const fixed = [];
+          for (const it of mapped) {
+            if (it.type === "fullwidthheader") {
+              if (seen.header) continue;
+              seen.header = true;
+              fixed.push(it);
+              continue;
+            }
+            if (it.type === "fullwidthfooter") {
+              if (seen.footer) continue;
+              seen.footer = true;
+              fixed.push(it);
+              continue;
+            }
+            fixed.push(it);
+          }
           setSections(fixed);
         }
 
@@ -1199,6 +1281,284 @@ export default function App() {
             </div>
             <div className="separator" />
 
+            {/* Quick add full-width bands (icon buttons) placed between Sign-off and Body Sections */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <button
+                className="btn add"
+                onClick={addFullWidthHeader}
+                aria-label="Add header band"
+                title="Add header band"
+                disabled={sections.some((s) => s.type === "fullwidthheader")}
+              >
+                <svg
+                  width="18"
+                  height="14"
+                  viewBox="0 0 18 14"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="0.75"
+                    y="2.5"
+                    width="16.5"
+                    height="9"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    fill="none"
+                  />
+                  <rect x="4" y="3" width="10" height="2" rx="0.5" fill="currentColor" />
+                </svg>
+              </button>
+
+              <button
+                className="btn add"
+                onClick={addFullWidthFooter}
+                aria-label="Add footer band"
+                title="Add footer band"
+                disabled={sections.some((s) => s.type === "fullwidthfooter")}
+              >
+                <svg
+                  width="18"
+                  height="14"
+                  viewBox="0 0 18 14"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="0.75"
+                    y="2.5"
+                    width="16.5"
+                    height="9"
+                    rx="1"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    fill="none"
+                  />
+                  <rect x="4" y="9" width="10" height="2" rx="0.5" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Full-width band editor(s) below buttons and above Body Sections */}
+            <div>
+              {[
+                ...sections.filter(
+                  (s) => s.type === "fullwidthheader" || s.type === "fullwidthfooter",
+                ),
+              ]
+                .sort((a, b) => {
+                  // header first, then footer
+                  const ra = a.type === "fullwidthheader" ? 0 : 1;
+                  const rb = b.type === "fullwidthheader" ? 0 : 1;
+                  return ra - rb;
+                })
+                .map((s) => (
+                  <div key={s.id} className="card paragraph-section">
+                    <div className="head">
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          className="badge"
+                          style={{
+                            color: "#ffffff",
+                            background: s.type === "fullwidthfooter" ? "#ef4444" : "#10b981",
+                            marginLeft: 8,
+                          }}
+                        >
+                          {s.type === "fullwidthfooter" ? "Footer" : "Header"}
+                        </span>
+                      </div>
+                      <div
+                        className="stack"
+                        style={{ display: "flex", gap: 8, alignItems: "center" }}
+                      >
+                        <button
+                          className="btn add"
+                          onClick={() =>
+                            s.type === "fullwidthheader"
+                              ? setHeaderBandOpen((v) => !v)
+                              : setFooterBandOpen((v) => !v)
+                          }
+                          title={
+                            (s.type === "fullwidthheader" ? headerBandOpen : footerBandOpen)
+                              ? "Collapse"
+                              : "Expand"
+                          }
+                        >
+                          {(s.type === "fullwidthheader" ? headerBandOpen : footerBandOpen)
+                            ? "▾"
+                            : "▸"}
+                        </button>
+                        <button
+                          className="btn remove"
+                          onClick={() => removeSection(s.id)}
+                          title="Remove"
+                        >
+                          − Remove
+                        </button>
+                      </div>
+                    </div>
+                    {(s.type === "fullwidthheader" ? headerBandOpen : footerBandOpen) && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div>
+                          <input
+                            className="input"
+                            type="text"
+                            value={s.html || ""}
+                            onChange={(e) => updateSection(s.id, { html: e.target.value })}
+                            placeholder="Bold headline or small content"
+                            style={{ width: "100%" }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div>
+                            <div className="label">Background colour</div>
+                            <div
+                              className="hex"
+                              style={{ display: "flex", alignItems: "center", gap: 8 }}
+                            >
+                              <button
+                                type="button"
+                                aria-label="Background colour"
+                                title="Change background color"
+                                className="color-square"
+                                onClick={(ev) => {
+                                  setPickerBandField("bg");
+                                  openColorPicker(
+                                    s.id,
+                                    safeColor(
+                                      s.color,
+                                      s.type === "fullwidthheader"
+                                        ? HEADER_BAND_DEFAULT
+                                        : FOOTER_BAND_DEFAULT,
+                                    ),
+                                    ev,
+                                  );
+                                }}
+                                style={{
+                                  background: safeColor(
+                                    s.color,
+                                    s.type === "fullwidthheader"
+                                      ? HEADER_BAND_DEFAULT
+                                      : FOOTER_BAND_DEFAULT,
+                                  ),
+                                }}
+                              />
+                              <input
+                                className="input"
+                                type="text"
+                                value={safeColor(
+                                  s.color,
+                                  s.type === "fullwidthheader"
+                                    ? HEADER_BAND_DEFAULT
+                                    : FOOTER_BAND_DEFAULT,
+                                )}
+                                onChange={(e) =>
+                                  updateSection(s.id, { color: e.target.value.trim() })
+                                }
+                                placeholder={
+                                  s.type === "fullwidthheader"
+                                    ? HEADER_BAND_DEFAULT
+                                    : FOOTER_BAND_DEFAULT
+                                }
+                                style={{ width: 120 }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="label">Text colour</div>
+                            <div
+                              className="hex"
+                              style={{ display: "flex", alignItems: "center", gap: 8 }}
+                            >
+                              <button
+                                type="button"
+                                aria-label="Text colour"
+                                title="Change text color"
+                                className="color-square"
+                                onClick={(ev) => {
+                                  setPickerBandField("text");
+                                  openColorPicker(s.id, safeColor(s.textColor, "#ffffff"), ev);
+                                }}
+                                style={{ background: safeColor(s.textColor, "#ffffff") }}
+                              />
+                              <input
+                                className="input"
+                                type="text"
+                                value={safeColor(s.textColor, "#ffffff")}
+                                onChange={(e) =>
+                                  updateSection(s.id, { textColor: e.target.value.trim() })
+                                }
+                                placeholder="#ffffff"
+                                style={{ width: 120 }}
+                              />
+                            </div>
+                          </div>
+                          {/* location is fixed at creation; no location selector shown */}
+                          <div style={{ minWidth: 180 }}>
+                            <div className="label">Font size (px)</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <input
+                                className="input"
+                                type="number"
+                                value={s.fontSize ?? (s.type === "fullwidthheader" ? 18 : 12)}
+                                onChange={(e) =>
+                                  updateSection(s.id, { fontSize: Number(e.target.value) })
+                                }
+                                style={{ width: 80 }}
+                              />
+                            </div>
+                          </div>
+                          {pickerOpenFor === s.id && (
+                            <div
+                              style={{
+                                position: "fixed",
+                                top: pickerPosition?.top,
+                                left: pickerPosition?.left,
+                                zIndex: 140,
+                              }}
+                            >
+                              <div
+                                style={{ position: "fixed", inset: 0 }}
+                                onClick={() => {
+                                  setPickerOpenFor(null);
+                                  setPickerBandField(null);
+                                }}
+                              />
+                              <ColorPicker
+                                width={220}
+                                height={140}
+                                hideAlpha={true}
+                                hideInput={["rgb", "hsv"]}
+                                color={pickerColorObj}
+                                onChange={(col) => setPickerColorObj(col)}
+                                onChangeComplete={(col) => {
+                                  const hex = col.hex;
+                                  if (pickerBandField === "text") {
+                                    updateSection(s.id, { textColor: hex });
+                                  } else {
+                                    updateSection(s.id, { color: hex });
+                                  }
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+            <div className="separator" />
             {/* Body Sections header (title above, buttons below) */}
             <div
               className="row"
@@ -1311,166 +1671,164 @@ export default function App() {
                     <rect x="0" y="3" width="20" height="2" rx="1" fill="currentColor" />
                   </svg>
                 </button>
-                <button
-                  className="btn add"
-                  onClick={addFullWidth}
-                  aria-label="Add full width band"
-                  title="Add full width band"
-                >
-                  <svg
-                    width="18"
-                    height="14"
-                    viewBox="0 0 18 14"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <rect x="0" y="2" width="18" height="10" rx="1" fill="currentColor" />
-                  </svg>
-                </button>
               </div>
             </div>
-            <div className="separator" />
 
             <div>
-              {sections.map((s) => (
-                <div
-                  key={s.id}
-                  className="card paragraph-section"
-                  onDragOver={onDragOver(s.id)}
-                  onDrop={onDrop(s.id)}
-                >
-                  <div className="head">
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {/* Hamburger is now the ONLY drag handle */}
-                      <button
-                        className="drag drag-handle"
-                        draggable
-                        onDragStart={onDragStart(s.id)}
-                        onDragEnd={() => (draggingId.current = null)}
-                        aria-label="Drag section"
-                        title="Drag to reorder"
-                        type="button"
+              {/* Render remaining sections in the Body Sections area */}
+              {sections
+                .filter((s) => s.type !== "fullwidthheader" && s.type !== "fullwidthfooter")
+                .map((s) => (
+                  <div
+                    key={s.id}
+                    className="card paragraph-section"
+                    onDragOver={onDragOver(s.id)}
+                    onDrop={onDrop(s.id)}
+                  >
+                    <div className="head">
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
                       >
-                        ☰
-                      </button>
-                      <span className="badge">
-                        {s.type === "paragraph"
-                          ? "Paragraph"
-                          : s.type === "cta"
-                            ? "CTA Button"
-                            : s.type === "imgtext"
-                              ? s.variant === "right"
-                                ? "Text + Img"
-                                : "Img + Text"
-                              : s.type === "separator"
-                                ? "Separator"
-                                : s.type === "fullwidth"
-                                  ? "Full-width band"
+                        {/* Hamburger is now the ONLY drag handle */}
+                        <button
+                          className="drag drag-handle"
+                          draggable
+                          onDragStart={onDragStart(s.id)}
+                          onDragEnd={() => (draggingId.current = null)}
+                          aria-label="Drag section"
+                          title="Drag to reorder"
+                          type="button"
+                        >
+                          ☰
+                        </button>
+                        <span className="badge">
+                          {s.type === "paragraph"
+                            ? "Paragraph"
+                            : s.type === "cta"
+                              ? "CTA Button"
+                              : s.type === "imgtext"
+                                ? s.variant === "right"
+                                  ? "Text + Img"
+                                  : "Img + Text"
+                                : s.type === "separator"
+                                  ? "Separator"
                                   : "Unknown"}
-                      </span>
-                      {s.type === "fullwidth" && (
-                        <span
-                          className="badge"
+                        </span>
+                      </div>
+                      <button
+                        className="btn remove"
+                        onClick={() => removeSection(s.id)}
+                        title="Remove"
+                      >
+                        − Remove
+                      </button>
+                    </div>
+
+                    {s.type === "imgtext" ? (
+                      <>
+                        <div
+                          className="row"
                           style={{
-                            background: s.location === "footer" ? "#ef4444" : "#10b981",
-                            marginLeft: 8,
+                            display: "flex",
+                            gap: 12,
+                            alignItems: "center",
+                            flexWrap: "wrap",
                           }}
                         >
-                          {s.location === "footer" ? "Footer" : "Header"}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      className="btn remove"
-                      onClick={() => removeSection(s.id)}
-                      title="Remove"
-                    >
-                      − Remove
-                    </button>
-                  </div>
+                          <div>
+                            <div className="label">Layout</div>
+                            <div className="stack" style={{ display: "flex", gap: 8 }}>
+                              <button
+                                type="button"
+                                className={`btn ${s.variant !== "right" ? "primary" : ""}`}
+                                onClick={() => updateSection(s.id, { variant: "left" })}
+                                title="Image on the left"
+                              >
+                                Image Left
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn ${s.variant === "right" ? "primary" : ""}`}
+                                onClick={() => updateSection(s.id, { variant: "right" })}
+                                title="Image on the right"
+                              >
+                                Image Right
+                              </button>
+                            </div>
+                          </div>
 
-                  {s.type === "imgtext" ? (
-                    <>
-                      <div
-                        className="row"
-                        style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}
-                      >
-                        <div>
-                          <div className="label">Layout</div>
-                          <div className="stack" style={{ display: "flex", gap: 8 }}>
-                            <button
-                              type="button"
-                              className={`btn ${s.variant !== "right" ? "primary" : ""}`}
-                              onClick={() => updateSection(s.id, { variant: "left" })}
-                              title="Image on the left"
-                            >
-                              Image Left
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn ${s.variant === "right" ? "primary" : ""}`}
-                              onClick={() => updateSection(s.id, { variant: "right" })}
-                              title="Image on the right"
-                            >
-                              Image Right
-                            </button>
+                          <div style={{ flex: 1, minWidth: 260 }}>
+                            <div className="label">Image URL</div>
+                            <div className="input-with-clear">
+                              <input
+                                className="input"
+                                type="text"
+                                value={s.img || ""}
+                                onChange={(e) => updateSection(s.id, { img: e.target.value })}
+                                placeholder="https://…"
+                              />
+                              {s.img && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateSection(s.id, { img: "" })}
+                                  className="clear-link"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ width: 260 }}>
+                            <div className="label">Alt text</div>
+                            <div className="input-with-clear">
+                              <input
+                                className="input"
+                                type="text"
+                                value={s.alt || ""}
+                                onChange={(e) => updateSection(s.id, { alt: e.target.value })}
+                                placeholder="Describe the image"
+                              />
+                              {s.alt && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateSection(s.id, { alt: "" })}
+                                  className="clear-link"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div style={{ flex: 1, minWidth: 260 }}>
-                          <div className="label">Image URL</div>
-                          <div className="input-with-clear">
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.img || ""}
-                              onChange={(e) => updateSection(s.id, { img: e.target.value })}
-                              placeholder="https://…"
-                            />
-                            {s.img && (
+                        <div style={{ marginTop: 8 }}>
+                          <div className="label">Text</div>
+                          <ParagraphEditor
+                            value={s.content}
+                            onChange={(val) => updateSection(s.id, { content: val })}
+                            modules={quillModules}
+                            formats={quillFormats}
+                          />
+                          {s.content && (
+                            <div className="row-right">
                               <button
                                 type="button"
-                                onClick={() => updateSection(s.id, { img: "" })}
+                                onClick={() => updateSection(s.id, { content: "" })}
                                 className="clear-link"
                               >
                                 Clear
                               </button>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
-
-                        <div style={{ width: 260 }}>
-                          <div className="label">Alt text</div>
-                          <div className="input-with-clear">
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.alt || ""}
-                              onChange={(e) => updateSection(s.id, { alt: e.target.value })}
-                              placeholder="Describe the image"
-                            />
-                            {s.alt && (
-                              <button
-                                type="button"
-                                onClick={() => updateSection(s.id, { alt: "" })}
-                                className="clear-link"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 8 }}>
-                        <div className="label">Text</div>
+                      </>
+                    ) : s.type === "paragraph" ? (
+                      <div>
                         <ParagraphEditor
                           value={s.content}
                           onChange={(val) => updateSection(s.id, { content: val })}
@@ -1489,239 +1847,29 @@ export default function App() {
                           </div>
                         )}
                       </div>
-                    </>
-                  ) : s.type === "paragraph" ? (
-                    <div>
-                      <ParagraphEditor
-                        value={s.content}
-                        onChange={(val) => updateSection(s.id, { content: val })}
-                        modules={quillModules}
-                        formats={quillFormats}
-                      />
-                      {s.content && (
-                        <div className="row-right">
-                          <button
-                            type="button"
-                            onClick={() => updateSection(s.id, { content: "" })}
-                            className="clear-link"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : s.type === "separator" ? (
-                    <div className="colorRow">
-                      <div className="hex">
-                        <button
-                          type="button"
-                          aria-label="Separator colour"
-                          title="Change separator color"
-                          className="color-square"
-                          onClick={() => {
-                            const cur = safeColor(s.color, brandColors.primary);
-                            setPickerOpenFor(s.id);
-                            setPickerColorObj(ColorService.convert("hex", cur));
-                          }}
-                          style={{ background: safeColor(s.color, brandColors.primary) }}
-                        />
-                        <input
-                          className="input"
-                          type="text"
-                          value={safeColor(s.color, brandColors.primary)}
-                          onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
-                          placeholder={brandColors.primary}
-                          style={{ width: 120 }}
-                        />
-                        <span className="help">Hex (#RRGGBB)</span>
-                      </div>
-                      {pickerOpenFor === s.id && (
-                        <div
-                          style={{
-                            position: "fixed",
-                            top: pickerPosition?.top,
-                            left: pickerPosition?.left,
-                            zIndex: 140,
-                          }}
-                        >
-                          <div
-                            style={{ position: "fixed", inset: 0 }}
-                            onClick={() => setPickerOpenFor(null)}
-                          />
-                          <ColorPicker
-                            width={220}
-                            height={140}
-                            hideAlpha={true}
-                            hideInput={["rgb", "hsv"]}
-                            color={pickerColorObj}
-                            onChange={(col) => setPickerColorObj(col)}
-                            onChangeComplete={(col) => updateSection(s.id, { color: col.hex })}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : s.type === "fullwidth" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div className="label">Band HTML (simple inline HTML)</div>
-                      <div>
-                        <input
-                          className="input"
-                          type="text"
-                          value={s.html || ""}
-                          onChange={(e) => updateSection(s.id, { html: e.target.value })}
-                          placeholder="Bold headline or small content"
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <div>
-                          <div className="label">Background colour</div>
-                          <div
-                            className="hex"
-                            style={{ display: "flex", alignItems: "center", gap: 8 }}
-                          >
-                            <input
-                              type="color"
-                              value={safeColor(s.color, brandColors.primary)}
-                              onChange={(e) => updateSection(s.id, { color: e.target.value })}
-                              aria-label="Background colour"
-                            />
-                            <input
-                              className="input"
-                              type="text"
-                              value={safeColor(s.color, brandColors.primary)}
-                              onChange={(e) =>
-                                updateSection(s.id, { color: e.target.value.trim() })
-                              }
-                              placeholder={brandColors.primary}
-                              style={{ width: 120 }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="label">Text colour</div>
-                          <div
-                            className="hex"
-                            style={{ display: "flex", alignItems: "center", gap: 8 }}
-                          >
-                            <input
-                              type="color"
-                              value={safeColor(s.textColor, "#ffffff")}
-                              onChange={(e) => updateSection(s.id, { textColor: e.target.value })}
-                              aria-label="Text colour"
-                            />
-                            <input
-                              className="input"
-                              type="text"
-                              value={safeColor(s.textColor, "#ffffff")}
-                              onChange={(e) =>
-                                updateSection(s.id, { textColor: e.target.value.trim() })
-                              }
-                              placeholder="#ffffff"
-                              style={{ width: 120 }}
-                            />
-                          </div>
-                        </div>
-                        <div style={{ minWidth: 120 }}>
-                          <div className="label">Padding (px)</div>
-                          <input
-                            className="input"
-                            type="number"
-                            value={s.padding ?? 0}
-                            onChange={(e) =>
-                              updateSection(s.id, { padding: Number(e.target.value) })
-                            }
-                            style={{ width: 80 }}
-                          />
-                        </div>
-                        <div style={{ minWidth: 160 }}>
-                          <div className="label">Place band</div>
-                          <select
-                            className="select"
-                            value={s.location || "header"}
-                            onChange={(e) => updateSection(s.id, { location: e.target.value })}
-                            style={{ width: 140 }}
-                          >
-                            <option value="header">Header (full-width)</option>
-                            <option value="footer">Footer (full-width)</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* CTA fields stacked as block; inputs at 95% width */}
-                      <div style={{ display: "block", gap: 8 }}>
-                        <div style={{ marginBottom: 8 }}>
-                          <div className="label">Text</div>
-                          <div className="input-with-clear">
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.label}
-                              onChange={(e) => updateSection(s.id, { label: e.target.value })}
-                            />
-                            {s.label && (
-                              <button
-                                type="button"
-                                onClick={() => updateSection(s.id, { label: "" })}
-                                className="clear-link"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="label">URL</div>
-                          <div className="input-with-clear">
-                            <input
-                              className="input"
-                              type="text"
-                              value={s.href}
-                              onChange={(e) => updateSection(s.id, { href: e.target.value })}
-                              placeholder="https://…"
-                              style={{ width: "100%" }}
-                            />
-                            {s.href && (
-                              <button
-                                type="button"
-                                onClick={() => updateSection(s.id, { href: "" })}
-                                className="clear-link"
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* CTA Color Picker: no label, square color picker */}
+                    ) : s.type === "separator" ? (
                       <div className="colorRow">
                         <div className="hex">
                           <button
                             type="button"
-                            aria-label="CTA colour"
-                            title="Change CTA color"
+                            aria-label="Separator colour"
+                            title="Change separator color"
                             className="color-square"
-                            onClick={(ev) =>
-                              openColorPicker(s.id, safeColor(s.color, brandDefaults.ctaColor), ev)
-                            }
-                            style={{ background: safeColor(s.color, brandDefaults.ctaColor) }}
+                            onClick={() => {
+                              const cur = safeColor(s.color, brandColors.primary);
+                              setPickerOpenFor(s.id);
+                              setPickerColorObj(ColorService.convert("hex", cur));
+                            }}
+                            style={{ background: safeColor(s.color, brandColors.primary) }}
                           />
                           <input
                             className="input"
                             type="text"
-                            value={safeColor(s.color, brandDefaults.ctaColor)}
-                            onChange={(e) =>
-                              updateSection(s.id, {
-                                color: e.target.value.trim(),
-                              })
-                            }
-                            placeholder={brandDefaults.ctaColor}
+                            value={safeColor(s.color, brandColors.primary)}
+                            onChange={(e) => updateSection(s.id, { color: e.target.value.trim() })}
+                            placeholder={brandColors.primary}
                             style={{ width: 120 }}
                           />
-                          <span className="help">Hex (#RRGGBB)</span>
                         </div>
                         {pickerOpenFor === s.id && (
                           <div
@@ -1743,18 +1891,119 @@ export default function App() {
                               hideInput={["rgb", "hsv"]}
                               color={pickerColorObj}
                               onChange={(col) => setPickerColorObj(col)}
-                              onChangeComplete={(col) => {
-                                const val = col.hex;
-                                updateSection(s.id, { color: val });
-                              }}
+                              onChangeComplete={(col) => updateSection(s.id, { color: col.hex })}
                             />
                           </div>
                         )}
                       </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <>
+                        {/* CTA fields stacked as block; inputs at 95% width */}
+                        <div style={{ display: "block", gap: 8 }}>
+                          <div style={{ marginBottom: 8 }}>
+                            <div className="label">Text</div>
+                            <div className="input-with-clear">
+                              <input
+                                className="input"
+                                type="text"
+                                value={s.label}
+                                onChange={(e) => updateSection(s.id, { label: e.target.value })}
+                              />
+                              {s.label && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateSection(s.id, { label: "" })}
+                                  className="clear-link"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="label">URL</div>
+                            <div className="input-with-clear">
+                              <input
+                                className="input"
+                                type="text"
+                                value={s.href}
+                                onChange={(e) => updateSection(s.id, { href: e.target.value })}
+                                placeholder="https://…"
+                                style={{ width: "100%" }}
+                              />
+                              {s.href && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateSection(s.id, { href: "" })}
+                                  className="clear-link"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CTA Color Picker: no label, square color picker */}
+                        <div className="colorRow">
+                          <div className="hex">
+                            <button
+                              type="button"
+                              aria-label="CTA colour"
+                              title="Change CTA color"
+                              className="color-square"
+                              onClick={(ev) =>
+                                openColorPicker(
+                                  s.id,
+                                  safeColor(s.color, brandDefaults.ctaColor),
+                                  ev,
+                                )
+                              }
+                              style={{ background: safeColor(s.color, brandDefaults.ctaColor) }}
+                            />
+                            <input
+                              className="input"
+                              type="text"
+                              value={safeColor(s.color, brandDefaults.ctaColor)}
+                              onChange={(e) =>
+                                updateSection(s.id, { color: e.target.value.trim() })
+                              }
+                              placeholder={brandDefaults.ctaColor}
+                              style={{ width: 120 }}
+                            />
+                          </div>
+                          {pickerOpenFor === s.id && (
+                            <div
+                              style={{
+                                position: "fixed",
+                                top: pickerPosition?.top,
+                                left: pickerPosition?.left,
+                                zIndex: 140,
+                              }}
+                            >
+                              <div
+                                style={{ position: "fixed", inset: 0 }}
+                                onClick={() => setPickerOpenFor(null)}
+                              />
+                              <ColorPicker
+                                width={220}
+                                height={140}
+                                hideAlpha={true}
+                                hideInput={["rgb", "hsv"]}
+                                color={pickerColorObj}
+                                onChange={(col) => setPickerColorObj(col)}
+                                onChangeComplete={(col) => {
+                                  const val = col.hex;
+                                  updateSection(s.id, { color: val });
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
             </div>
 
             <div className="separator" />
