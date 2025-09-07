@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import ReactQuill from "react-quill-new";
@@ -7,11 +8,28 @@ import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
 import brandsData from "./brands.json";
 import baseTemplate from "./template.html?raw";
+// Typed utils (we keep ts-nocheck in this file for now, but start consolidating logic)
+import { getBlocks, replaceBlock } from "./utils/fences";
+import {
+  sanitizeInlineHtml,
+  sanitizeParaHtml,
+  escapeText,
+  safeColor,
+  isHex,
+} from "./utils/sanitizers";
 
 /* ===================== DEFAULTS ===================== */
 const DEFAULT_CTA_COLOR = "#15ad36";
 const HEADER_BAND_DEFAULT = "#10b981";
 const FOOTER_BAND_DEFAULT = "#ef4444";
+// Stable fallback colors to avoid recreating objects each render
+const FALLBACK_BRAND_COLORS = Object.freeze({
+  primary: "#667eea",
+  accent: "#3643ba",
+  text: "#111827",
+  bg: "#ffffff",
+  ctaColor: "#667eea",
+});
 const PLACEHOLDER_IMG =
   "data:image/png;base64,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";
 
@@ -114,305 +132,6 @@ function validateBrands(data) {
   return Object.keys(out).length ? out : null;
 }
 
-/* ===================== Helpers: fences + sanitize ===================== */
-const FENCE_RE = /<!--\s*editable:start([\s\S]*?)-->([\s\S]*?)<!--\s*editable:end\s*-->/g;
-
-function parseAttrs(raw) {
-  const out = {};
-  const rx = /(\w+)\s*=\s*"([^"]*)"/g;
-  let m;
-  while ((m = rx.exec(raw))) out[m[1]] = m[2];
-  return out;
-}
-
-/**
- * Extracts all editable blocks from a given HTML string.
- *
- * The function takes a HTML string and returns an array of objects
- * with the following properties:
- *
- * - `name`: The name of the block (from the `name` attribute).
- * - `label`: The label of the block (from the `label` attribute or the `name` attribute).
- * - `type`: The type of the block (from the `type` attribute or `"textarea"` by default).
- * - `max`: The maximum allowed length of the block (from the `max` attribute).
- * - `fullMatch`: The full match of the block (including the fence).
- * - `start` and `end`: The start and end indices of the block in the original HTML.
- * - `body`: The contents of the block (without the fence).
- */
-function getBlocks(html) {
-  const blocks = [];
-  let m;
-  while ((m = FENCE_RE.exec(html))) {
-    const attrs = parseAttrs(m[1] || "");
-    const body = m[2] ?? "";
-    const name = attrs.name || "";
-    blocks.push({
-      name,
-      label: attrs.label || name || "(unnamed)",
-      type: attrs.type || "textarea",
-      max: attrs.max ? parseInt(attrs.max, 10) : undefined,
-      fullMatch: m[0],
-      start: m.index,
-      end: m.index + m[0].length,
-      body,
-    });
-  }
-  return blocks;
-}
-
-/**
- * Replaces an editable block in an HTML string with new content.
- */
-function replaceBlock(html, name, newBody) {
-  const re = new RegExp(
-    `<!--\\s*editable:start([^>]*name="${name}"[^>]*)-->([\\s\\S]*?)<!--\\s*editable:end\\s*-->`,
-    "m",
-  );
-  return html.replace(re, (_all, attrs) => {
-    return `<!-- editable:start${attrs}-->${newBody}<!-- editable:end -->`;
-  });
-}
-
-/**
- * Escapes HTML special characters in a given string.
- */
-function escapeText(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-/**
- * Pure helper function to validate a color string and return it if it's valid
- * or a fallback color if it's not.
- */
-function safeColor(c, fallback = "#667eea") {
-  return isHex(c || "") ? c : fallback;
-}
-
-const isHex = (s) => typeof s === "string" && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s);
-
-// Inline-only sanitizer for GREETING and SIGNOFF (bold/italic, links, <br>).
-// Unwraps block tags like <p>/<div>, strips attributes, preserves safe <a href>.
-// This is a more restrictive sanitizer than the one used for the main body text.
-function sanitizeInlineHtml(html) {
-  const root = document.createElement("div");
-  root.innerHTML = html;
-
-  const allowedInline = new Set([
-    // Allow bold, italic, underline, links, and line breaks
-    "strong",
-    "em",
-    "u",
-    "a",
-    "br",
-  ]);
-
-  // Recursively walk the DOM tree and apply the following rules:
-  // 1. Unwrap block tags like <p>/<div>
-  // 2. Strip attributes from allowed inline tags
-  // 3. Replaces any disallowed tags with their text content
-  const unwrap = (el) => {
-    const frag = document.createDocumentFragment();
-    while (el.firstChild) frag.appendChild(el.firstChild);
-    el.replaceWith(frag);
-  };
-
-  (function walk(node) {
-    [...node.childNodes].forEach((child) => {
-      if (child.nodeType !== 1) return;
-      const tag = child.tagName.toLowerCase();
-
-      // Allow only inline tags; unwrap common block/neutral wrappers
-      if (!allowedInline.has(tag)) {
-        if (tag === "p" || tag === "div" || tag === "span" || tag.startsWith("h")) {
-          // Drop attributes & unwrap
-          while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
-          walk(child);
-          unwrap(child);
-          return;
-        }
-        // Anything else becomes plain text
-        const text = document.createTextNode(child.textContent || "");
-        child.replaceWith(text);
-        return;
-      }
-
-      if (tag === "a") {
-        const href = child.getAttribute("href") || "";
-        if (!/^(https?:|mailto:|tel:|#)/i.test(href)) child.removeAttribute("href");
-        // Strip everything except href
-        [...child.attributes].forEach((a) => {
-          if (a.name.toLowerCase() !== "href") child.removeAttribute(a.name);
-        });
-        walk(child);
-        return;
-      }
-
-      // strong/em/u/br: drop attributes and recurse
-      [...child.attributes].forEach((a) => child.removeAttribute(a.name));
-      walk(child);
-    });
-  })(root);
-
-  return root.innerHTML;
-}
-
-/**
- * Sanitizes HTML for use in email templates.
- *
- * This function runs two passes on the input HTML:
- *
- * 1. Normalize list containers: convert `<ol>` to `<ul>` when the list contains only bullet items.
- * 2. Sanitize tags + attributes: strip all tags except for those whitelisted, and strip all attributes
- *    except for `href` on `<a>` and `style` on `<span>` with allowed color/background-color properties.
- */
-function sanitizeParaHtml(html) {
-  const root = document.createElement("div");
-  root.innerHTML = html;
-
-  // --- PASS 1: Normalize list containers ---
-  // Convert any <ol> that contains ONLY bullet items to <ul>
-  const ols = Array.from(root.querySelectorAll("ol"));
-  ols.forEach((ol) => {
-    const lis = Array.from(ol.children).filter(
-      (c) => c.tagName && c.tagName.toLowerCase() === "li",
-    );
-    if (lis.length > 0 && lis.every((li) => (li.getAttribute("data-list") || "") === "bullet")) {
-      const ul = document.createElement("ul");
-      // Move children over intact (we'll sanitize in pass 2)
-      while (ol.firstChild) ul.appendChild(ol.firstChild);
-      ol.replaceWith(ul);
-    }
-    // If mixed (some bullet, some ordered), we leave it as <ol> to avoid corrupting structure.
-  });
-
-  // --- PASS 2: Sanitize tags + attributes ---
-  const allowed = new Set([
-    "a",
-    "br",
-    "strong",
-    "b",
-    "em",
-    "i",
-    "u",
-    "p",
-    "ol",
-    "ul",
-    "li",
-    "span", // <— NEW for color/highlight
-  ]);
-
-  /**
-   * Determines if a CSS property and its value are allowed.
-   */
-  const styleOk = (prop, val) => {
-    const p = prop.trim().toLowerCase();
-    const v = val.trim().toLowerCase();
-
-    if (p !== "color" && p !== "background-color") return false;
-
-    // Accept hex (#rgb/#rrggbb) or rgb()/rgba()
-    const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v);
-    const rgb =
-      /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i.test(v);
-
-    // If you want to enforce only brand palette (recommended for email),
-    // turn this on by returning BRAND_COLORS.has(v) instead of (hex||rgb).
-    const allowedByFormat = hex || rgb;
-
-    // palette enforcement (toggle ON if desired)
-    // return BRAND_COLORS.has(v);
-
-    return allowedByFormat;
-  };
-
-  (function walk(node) {
-    [...node.childNodes].forEach((child) => {
-      if (child.nodeType !== 1) return;
-      let tag = child.tagName.toLowerCase();
-
-      if (!allowed.has(tag)) {
-        const text = document.createTextNode(child.textContent || "");
-        child.replaceWith(text);
-        return;
-      }
-
-      // normalize <b>/<i> to semantic tags
-      if (tag === "b" || tag === "i") {
-        const replacement = document.createElement(tag === "b" ? "strong" : "em");
-        replacement.innerHTML = child.innerHTML;
-        child.replaceWith(replacement);
-        walk(replacement);
-        return;
-      }
-
-      if (tag === "a") {
-        const href = child.getAttribute("href") || "";
-        if (!/^(https?:|mailto:|tel:|#)/i.test(href)) {
-          child.removeAttribute("href");
-        } else {
-          child.setAttribute("href", href);
-        }
-        [...child.attributes].forEach((a) => {
-          if (a.name.toLowerCase() !== "href") child.removeAttribute(a.name);
-        });
-        walk(child);
-        return;
-      }
-
-      // Lists: keep structure, strip classes; preserve indent via margin-left
-      if (tag === "li") {
-        const cls = child.getAttribute("class") || "";
-        const m = cls.match(/ql-indent-(\d+)/);
-        const level = m ? Math.min(8, parseInt(m[1], 10) || 0) : 0;
-        while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
-        if (level > 0) child.setAttribute("style", `margin-left:${level * 20}px`);
-        walk(child);
-        return;
-      }
-
-      // NEW: spans for color/background — keep only allowed color styles
-      if (tag === "span") {
-        // rebuild a minimal style string with just color/background-color
-        const styleAttr = child.getAttribute("style") || "";
-        const styles = styleAttr
-          .split(";")
-          .map((s) => s.trim())
-          .filter(Boolean);
-        const kept = [];
-        styles.forEach((pair) => {
-          const idx = pair.indexOf(":");
-          if (idx === -1) return;
-          const prop = pair.slice(0, idx);
-          const val = pair.slice(idx + 1);
-          if (styleOk(prop, val)) kept.push(prop.trim().toLowerCase() + ":" + val.trim());
-        });
-
-        // drop all attributes, re-apply only the pruned style (if any)
-        while (child.attributes.length) child.removeAttribute(child.attributes[0].name);
-        if (kept.length) child.setAttribute("style", kept.join(";"));
-
-        // if no valid styles left, we can either keep the span or unwrap it
-        if (!kept.length) {
-          // unwrap the span (safer/cleaner)
-          const frag = document.createDocumentFragment();
-          while (child.firstChild) frag.appendChild(child.firstChild);
-          child.replaceWith(frag);
-          return; // children already moved
-        }
-
-        walk(child);
-        return;
-      }
-
-      // default: p/ol/ul/strong/em/u/br — strip all attrs
-      [...child.attributes].forEach((a) => child.removeAttribute(a.name));
-      walk(child);
-    });
-  })(root);
-
-  return root.innerHTML;
-}
-
 /* ===================== Section builders ===================== */
 // Helpers to build section HTML from section data
 // The button text should contain a full URL including protocol.
@@ -421,32 +140,32 @@ const sectionHTML = {
   cta: (label, href, color) =>
     `
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
-  <tr>
-    <td align="center" style="padding:8px 0 24px 0">
-      <a class="btn" href="${href}" style="background:${color}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
-        ${escapeText(label)}
-      </a>
-    </td>
-  </tr>
+	<tr>
+		<td align="center" style="padding:8px 0 24px 0">
+			<a class="btn" href="${href}" style="background:${color}; border-radius:6px; color:#fff; display:inline-block; font-weight:700; font-size:16px; line-height:44px; text-align:center; text-decoration:none; width:400px">
+				${escapeText(label)}
+			</a>
+		</td>
+	</tr>
 </table>`.trim(),
 
   // NEW: image + text (email-safe table, image-left or image-right)
   imgtext: ({ variant = "left", img = PLACEHOLDER_IMG, alt = "Image", html = "" }) => {
     const imgTd = `
-      <td width="40%" class="col col-img" style="padding:0 12px 0 12px;">
-        <img src="${img}" alt="${escapeText(alt)}" width="150" style="display:block;border:0;width:150px;max-width:100%;height:auto;">
-      </td>`;
+			<td width="40%" class="col col-img" style="padding:0 12px 0 12px;">
+				<img src="${img}" alt="${escapeText(alt)}" width="150" style="display:block;border:0;width:150px;max-width:100%;height:auto;">
+			</td>`;
     const textTd = `
-      <td width="60%" class="col col-text" style="padding:0 12px 0 12px; color:rgb(71,85,105); font-size:14px; line-height:1.6;">
-        ${html}
-      </td>`;
+			<td width="60%" class="col col-text" style="padding:0 12px 0 12px; color:rgb(71,85,105); font-size:14px; line-height:1.6;">
+				${html}
+			</td>`;
     const leftFirst = variant !== "right";
     return `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px; margin:0 auto;">
-  <tr>
-    ${leftFirst ? imgTd : textTd}
-    ${leftFirst ? textTd : imgTd}
-  </tr>
+	<tr>
+		${leftFirst ? imgTd : textTd}
+		${leftFirst ? textTd : imgTd}
+	</tr>
 </table>`.trim();
   },
 
@@ -454,15 +173,15 @@ const sectionHTML = {
   separator: (color = "#e5e7eb") =>
     `
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px; margin:0 auto;">
-  <tr>
-    <td style="padding:16px 0;">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td style="height:2px; background:${color}; line-height:1px; font-size:1px;">&nbsp;</td>
-        </tr>
-      </table>
-    </td>
-  </tr>
+	<tr>
+		<td style="padding:16px 0;">
+			<table width="100%" cellpadding="0" cellspacing="0" border="0">
+				<tr>
+					<td style="height:2px; background:${color}; line-height:1px; font-size:1px;">&nbsp;</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
 </table>`.trim(),
   // NEW: full-width header
   fullwidthheader: ({
@@ -472,11 +191,11 @@ const sectionHTML = {
     fontSize = 18,
   }) =>
     `
-  </tr>
-  <tr>
-    <td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
-      <div style="font-size:${fontSize}px;">${html}</div>
-    </td>`.trim(),
+	</tr>
+	<tr>
+		<td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
+			<div style="font-size:${fontSize}px;">${html}</div>
+		</td>`.trim(),
 
   // NEW: full-width footer
   fullwidthfooter: ({
@@ -486,11 +205,11 @@ const sectionHTML = {
     fontSize = 12,
   }) =>
     `
-    <td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
-      <div style="font-size:${fontSize}px;">${html}</div>
-    </td>
-  </tr>
-  <tr>`.trim(),
+		<td align="center" style="padding:8px 0;margin:0;background:${color};color:${textColor};text-align:center;">
+			<div style="font-size:${fontSize}px;">${html}</div>
+		</td>
+	</tr>
+	<tr>`.trim(),
 };
 
 /* ======================================================== */
@@ -633,29 +352,25 @@ export default function App() {
   const blocks = useMemo(() => getBlocks(html), [html]);
   const getBlockValue = (name) => (blocks.find((b) => b.name === name)?.body || "").trim();
 
-  // Load brands from JSON and set initial brand if needed
+  // Validate brands once, then set into state
+  const validatedBrands = useMemo(() => validateBrands(brandsData), []);
   useEffect(() => {
-    const validated = validateBrands(brandsData);
-    if (validated) {
-      setBrands(validated);
-      if (!validated[brand]) {
-        const first = Object.keys(validated)[0];
-        if (first) setBrand(first);
-      }
-    } else {
-      console.error("brands.json schema invalid or empty.");
+    if (validatedBrands) setBrands(validatedBrands);
+    else console.error("brands.json schema invalid or empty.");
+  }, [validatedBrands]);
+
+  // Ensure selected brand is valid whenever brands load/change
+  useEffect(() => {
+    if (!Object.keys(brands).length) return;
+    if (!brands[brand]) {
+      const first = Object.keys(brands)[0];
+      if (first) setBrand(first);
     }
-  }, []);
+  }, [brands, brand]);
 
   // --- Brand-derived values (safe defaults if not loaded yet)
   const activeBrand = brands[brand];
-  const brandColors = activeBrand?.colors ?? {
-    primary: "#667eea",
-    accent: "#3643ba",
-    text: "#111827",
-    bg: "#ffffff",
-    ctaColor: "#667eea",
-  };
+  const brandColors = activeBrand?.colors ?? FALLBACK_BRAND_COLORS;
   const brandDefaults = { ctaColor: brandColors.ctaColor };
 
   // run once to replace the initial fallback with the brand default after brands load
@@ -830,7 +545,7 @@ export default function App() {
 
       return next;
     });
-  }, [sections, brandDefaults.ctaColor]);
+  }, [sections, brandDefaults.ctaColor, brand, brands, brandColors.primary]);
 
   /**
    * Given HTML and an array of parsed blocks, return the current content of an
@@ -2268,7 +1983,7 @@ function ParagraphEditor({ value, onChange, modules, formats }) {
 
     root.addEventListener("keydown", handleKeyDown);
     return () => root.removeEventListener("keydown", handleKeyDown);
-  }, [open, query, active, flat]);
+  }, [open, query, active, flat, triggerIndex]);
 
   useEffect(() => {
     const quill = quillRef.current?.getEditor?.();

@@ -53,6 +53,17 @@ yarn install
 - Brands are defined in `src/brands.json`.
 - Use the `sectionHTML` helpers to control how paragraph / CTA blocks are rendered into the exported HTML.
 
+## TypeScript migration (incremental)
+
+This repository is primarily JavaScript. To start an incremental TypeScript migration the project includes a minimal `tsconfig.json` and a few type shims.
+
+Steps to run a type-check locally (uses yarn):
+
+1. Install TypeScript and types: `yarn add -D typescript @types/react @types/react-dom`
+2. Run the type-check: `yarn tsc --noEmit`
+
+When converting files, prefer adding `.ts`/`.tsx` files next to existing `.js` files and import the small types from `src/types.ts`.
+
 # Running the app
 
 ### Runs the app in development mode.

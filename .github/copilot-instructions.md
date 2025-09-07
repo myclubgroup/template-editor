@@ -3,12 +3,12 @@
 ## Project Overview
 
 - This is a Vite + React project for editing email templates with rich text and mail-merge tags.
-- Main UI logic is in `src/App.jsx`. The app parses and edits HTML templates with custom comment fences (e.g., `<!-- editable:start ... --> ... <!-- editable:end -->`).
+- Main UI logic is in `src/App.tsx`. The app parses and edits HTML templates with custom comment fences (e.g., `<!-- editable:start ... --> ... <!-- editable:end -->`).
 - Brand-specific blocks and mail-merge tags are defined in JS constants and injected into the template.
 
 ## Key Files & Structure
 
-- `src/App.jsx`: Core editor logic, Quill integration, template parsing, mail-merge tag management.
+- `src/App.tsx`: Core editor logic, Quill integration, template parsing, mail-merge tag management.
 - `public/`: Static assets (favicon, logos, manifest).
 - `src/editor.css`: CSS for editor.
 - `src/template.html`: Template source.
@@ -42,8 +42,8 @@
 
 ## Examples
 
-- To add a new editable section, update both the template HTML in `template.html` and if necessary the JS parsing logic in `src/App.jsx`.
-- To add a new mail-merge tag, update the `MERGE_TAGS` and `MERGE_GROUPS` arrays in `src/App.jsx`.
+- To add a new editable section, update both the template HTML in `template.html` and if necessary the JS parsing logic in `src/App.tsx`.
+- To add a new mail-merge tag, update the `MERGE_TAGS` and `MERGE_GROUPS` arrays in `src/App.tsx`.
 
 ## Tips for AI Agents
 
