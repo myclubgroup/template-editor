@@ -833,26 +833,55 @@ export default function App() {
 
   /* --------- Drag & drop for sections --------- */
   const draggingId = useRef(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const [dragAllowed, setDragAllowed] = useState(true);
   const onDragStart = (id) => (e) => {
     draggingId.current = id;
     e.dataTransfer.effectAllowed = "move";
   };
-  const onDragOver = () => (e) => {
+  // drag over accepts the target id so we can validate band/body constraints
+  const onDragOver = (id) => (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    setDragOverId(id);
+
+    const fromId = draggingId.current;
+    if (!fromId) return setDragAllowed(false);
+    const fromSec = sections.find((s) => s.id === fromId);
+    const toSec = sections.find((s) => s.id === id);
+    if (!fromSec || !toSec) return setDragAllowed(false);
+    const fromIsBand = fromSec.type === "fullwidthheader" || fromSec.type === "fullwidthfooter";
+    const toIsBand = toSec.type === "fullwidthheader" || toSec.type === "fullwidthfooter";
+    setDragAllowed(fromIsBand === toIsBand);
+  };
+  const onDragLeave = (id) => () => {
+    setDragOverId((cur) => (cur === id ? null : cur));
+    setDragAllowed(true);
   };
   const onDrop = (id) => (e) => {
     e.preventDefault();
     const fromId = draggingId.current;
+    setDragOverId(null);
     if (!fromId || fromId === id) return;
     const fromIdx = sections.findIndex((s) => s.id === fromId);
     const toIdx = sections.findIndex((s) => s.id === id);
     if (fromIdx < 0 || toIdx < 0) return;
+    const fromSec = sections[fromIdx];
+    const toSec = sections[toIdx];
+    const fromIsBand = fromSec.type === "fullwidthheader" || fromSec.type === "fullwidthfooter";
+    const toIsBand = toSec.type === "fullwidthheader" || toSec.type === "fullwidthfooter";
+    if (fromIsBand !== toIsBand) {
+      // invalid move; ignore
+      draggingId.current = null;
+      setDragAllowed(true);
+      return;
+    }
     const next = [...sections];
     const [moved] = next.splice(fromIdx, 1);
     next.splice(toIdx, 0, moved);
     setSections(next);
     draggingId.current = null;
+    setDragAllowed(true);
   };
 
   /**
@@ -1681,10 +1710,12 @@ export default function App() {
                 .map((s) => (
                   <div
                     key={s.id}
-                    className="card paragraph-section"
+                    className={"card paragraph-section" + (dragOverId === s.id ? " drag-over" : "")}
                     onDragOver={onDragOver(s.id)}
+                    onDragLeave={onDragLeave(s.id)}
                     onDrop={onDrop(s.id)}
                   >
+                    {dragOverId === s.id && dragAllowed && <div className="drag-placeholder" />}
                     <div className="head">
                       <div
                         style={{

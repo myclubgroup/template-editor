@@ -217,6 +217,21 @@ h3 {
     @apply mb-2 last:mb-0;
   }
 
+  /* Drag visuals: placeholder and highlight when dragging over a valid target */
+  .drag-placeholder {
+    height: 10px;
+    border-top: 2px dashed rgba(99, 102, 241, 0.9); /* indigo dashed line */
+    margin: 6px 0 8px 0;
+    border-radius: 2px;
+  }
+
+  .card.drag-over {
+    box-shadow:
+      0 6px 18px rgba(16, 24, 40, 0.25),
+      0 0 0 3px rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.8);
+  }
+
   /* ===================== Merge Tag Menu ===================== */
   .tag-menu {
     @apply absolute z-[70] min-w-[260px] max-h-60 overflow-auto bg-gray-800 border border-slate-700 rounded-lg shadow-[0_12px_32px_rgba(0,0,0,0.45)];
