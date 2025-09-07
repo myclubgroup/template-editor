@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import ReactQuill from "react-quill-new";
@@ -7,6 +6,7 @@ import "react-color-palette/css";
 import "react-quill-new/dist/quill.snow.css";
 import "./editor.css";
 import brandsData from "./brands.json";
+// @ts-expect-error Vite raw import; typed via src/global.d.ts
 import baseTemplate from "./template.html?raw";
 // Typed utils (we keep ts-nocheck in this file for now, but start consolidating logic)
 import { getBlocks, replaceBlock } from "./utils/fences";
@@ -17,6 +17,23 @@ import {
   safeColor,
   isHex,
 } from "./utils/sanitizers";
+import type { Brand, BrandColors, MergeGroup, Section } from "./types";
+// Lightly-typed wrappers for third-party components
+const AnyColorPicker = ColorPicker as unknown as React.ComponentType<Record<string, unknown>>;
+const AnyReactQuill = ReactQuill as unknown as React.ComponentType<Record<string, unknown>>;
+
+// Minimal Quill types used via react-quill-new ref
+type QuillInstance = {
+  root: HTMLElement;
+  getSelection: (focus?: boolean) => { index: number } | null;
+  setSelection: (index: number, length: number, source?: unknown) => void;
+  insertText: (index: number, text: string, source?: unknown) => void;
+  deleteText: (index: number, length: number, source?: unknown) => void;
+  getBounds: (index: number) => { top: number; left: number; height: number };
+  on: (ev: string, cb: (range: unknown) => void) => void;
+  off?: (ev: string, cb: (range: unknown) => void) => void;
+};
+type QuillComponent = { getEditor?: () => QuillInstance };
 
 /* ===================== DEFAULTS ===================== */
 const DEFAULT_CTA_COLOR = "#15ad36";
@@ -29,12 +46,12 @@ const FALLBACK_BRAND_COLORS = Object.freeze({
   text: "#111827",
   bg: "#ffffff",
   ctaColor: "#667eea",
-});
+}) as BrandColors;
 const PLACEHOLDER_IMG =
   "data:image/png;base64,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";
 
 // ---- Mail-merge tags grouped by module ----
-const MERGE_GROUPS = [
+const MERGE_GROUPS: MergeGroup[] = [
   {
     group: "Leads",
     items: [
@@ -71,7 +88,7 @@ const MERGE_GROUPS = [
 /**
  * Utility: filter groups by query, keeping order and dropping empty groups
  */
-const filterGroups = (q) => {
+const filterGroups = (q: string) => {
   const query = (q || "").trim().toLowerCase();
   if (!query) return MERGE_GROUPS;
 
@@ -90,16 +107,22 @@ const filterGroups = (q) => {
 /**
  * Validate brand data and extract valid data into a new object.
  */
-function validateBrands(data) {
+function validateBrands(data: unknown): Record<string, Brand> | null {
   if (!data || typeof data !== "object") return null;
 
-  const out = {};
-  for (const [key, v] of Object.entries(data)) {
+  const out: Record<string, Brand> = {};
+  for (const [key, vRaw] of Object.entries(data as Record<string, unknown>)) {
+    const v = vRaw as {
+      brandName?: string;
+      HEADER?: string;
+      FOOTER?: string;
+      colors?: Partial<BrandColors>;
+    };
     const brandName = (v?.brandName && String(v.brandName).trim()) || key;
     // Check if the brand has a valid HEADER and FOOTER
     const okHeaderFooter = v && typeof v.HEADER === "string" && typeof v.FOOTER === "string";
     // Check if the brand has valid colors
-    const colors = v?.colors || {};
+    const colors = (v?.colors || {}) as Partial<BrandColors>;
     const okColors =
       isHex(colors.primary || "") &&
       isHex(colors.accent || "") &&
@@ -112,14 +135,10 @@ function validateBrands(data) {
       out[key] = {
         brandName,
         colors: {
-          primary: colors.primary,
-          accent: colors.accent,
-          text: colors.text,
-          bg: colors.bg,
-          ctaColor: colors.ctaColor,
+          ...(colors as BrandColors),
         },
-        HEADER: v.HEADER,
-        FOOTER: v.FOOTER,
+        HEADER: v.HEADER as string,
+        FOOTER: v.FOOTER as string,
       };
     } else {
       // Warn about invalid brands
@@ -219,7 +238,7 @@ const sectionHTML = {
 /* ======================================================== */
 
 export default function App() {
-  const [previewMode, setPreviewMode] = useState("desktop"); // desktop | tablet | mobile
+  const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   function PreviewModeButtons() {
     return (
@@ -248,23 +267,23 @@ export default function App() {
       </div>
     );
   }
-  const [brands, setBrands] = useState({}); // <— loaded from JSON
-  const [brand, setBrand] = useState(""); // use first brand once loaded
-  const [html, setHtml] = useState(() => baseTemplate.trim()); // base template
+  const [brands, setBrands] = useState<Record<string, Brand>>({}); // <— loaded from JSON
+  const [brand, setBrand] = useState<string>(""); // use first brand once loaded
+  const [html, setHtml] = useState<string>(() => baseTemplate.trim()); // base template
 
   // Modal state for raw HTML
-  const [showHtmlModal, setShowHtmlModal] = useState(false);
-  const [exportedHtml, setExportedHtml] = useState("");
+  const [showHtmlModal, setShowHtmlModal] = useState<boolean>(false);
+  const [exportedHtml, setExportedHtml] = useState<string>("");
   // Color picker popover state
-  const [pickerOpenFor, setPickerOpenFor] = useState(null); // section id or null
+  const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null); // section id or null
   // shared color object for the popover (useColor returns [color, setColor])
   const [pickerColorObj, setPickerColorObj] = useColor("#ffffff");
-  const [pickerPosition, setPickerPosition] = useState(null); // {top,left} in px (fixed)
+  const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(null); // {top,left} in px (fixed)
   // For bands only: which field is active for the color picker ("bg" | "text")
-  const [pickerBandField, setPickerBandField] = useState(null);
+  const [pickerBandField, setPickerBandField] = useState<"bg" | "text" | null>(null);
 
   // Open the color picker for a given section id and base hex color, positioning the popover so it's always visible
-  const openColorPicker = (id, hex, ev) => {
+  const openColorPicker = (id: string, hex: string, ev?: React.MouseEvent) => {
     try {
       const colorObj = ColorService.convert("hex", hex);
       setPickerColorObj(colorObj);
@@ -305,7 +324,7 @@ export default function App() {
 
   // Sections state: array of {id,type,content,label,href,color}
   // Set initial values with example content
-  const [sections, setSections] = useState([
+  const [sections, setSections] = useState<Section[]>([
     {
       id: cryptoRandom(),
       type: "paragraph",
@@ -350,7 +369,7 @@ export default function App() {
   const [footerBandOpen, setFooterBandOpen] = useState(true);
 
   const blocks = useMemo(() => getBlocks(html), [html]);
-  const getBlockValue = (name) => (blocks.find((b) => b.name === name)?.body || "").trim();
+  const getBlockValue = (name: string) => (blocks.find((b) => b.name === name)?.body || "").trim();
 
   // Validate brands once, then set into state
   const validatedBrands = useMemo(() => validateBrands(brandsData), []);
@@ -370,7 +389,7 @@ export default function App() {
 
   // --- Brand-derived values (safe defaults if not loaded yet)
   const activeBrand = brands[brand];
-  const brandColors = activeBrand?.colors ?? FALLBACK_BRAND_COLORS;
+  const brandColors: BrandColors = activeBrand?.colors ?? FALLBACK_BRAND_COLORS;
   const brandDefaults = { ctaColor: brandColors.ctaColor };
 
   // run once to replace the initial fallback with the brand default after brands load
@@ -459,8 +478,8 @@ export default function App() {
   useEffect(() => {
     // Separate fullwidth bands from inline body sections so we can inject
     // them outside the SECTIONS fence (directly under HEADER or above FOOTER)
-    const headerBands = [];
-    const footerBands = [];
+    const headerBands: string[] = [];
+    const footerBands: string[] = [];
 
     const bodyHtml = sections
       .filter((s) => s.type !== "fullwidthheader" && s.type !== "fullwidthfooter")
@@ -552,7 +571,7 @@ export default function App() {
    * inline fence field. Inline fields are special because they are meant to be
    * single lines of text, so we normalize the whitespace when we display them.
    */
-  function getInlineFence(html, name, blocks) {
+  function getInlineFence(html: string, name: string, blocks: { name: string; body: string }[]) {
     const body = blocks.find((b) => b.name === name)?.body ?? "";
     // Remove exactly one leading and one trailing newline (if any)
     const unpadded = body.replace(/^\n/, "").replace(/\n$/, "");
@@ -563,7 +582,7 @@ export default function App() {
   /**
    * Replaces the contents of a named fence with new content.
    */
-  function handleFenceChange(name, value, type) {
+  function handleFenceChange(name: string, value: string, type: "text" | "html") {
     const safe = type === "text" ? escapeText(value) : value;
     setHtml((prev) => replaceBlock(prev, name, `\n${safe}\n`));
   }
@@ -572,19 +591,19 @@ export default function App() {
    * Returns the body of the fence with the given name, or an empty string if
    * the fence is not found.
    */
-  const getFenceBody = (name) =>
+  const getFenceBody = (name: string) =>
     (blocks.find((b) => b.name === name)?.body ?? "").replace(/^\n/, "").replace(/\n$/, "");
 
   /* --------- Drag & drop for sections --------- */
-  const draggingId = useRef(null);
-  const [dragOverId, setDragOverId] = useState(null);
-  const [dragAllowed, setDragAllowed] = useState(true);
-  const onDragStart = (id) => (e) => {
+  const draggingId = useRef<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [dragAllowed, setDragAllowed] = useState<boolean>(true);
+  const onDragStart = (id: string) => (e: React.DragEvent) => {
     draggingId.current = id;
     e.dataTransfer.effectAllowed = "move";
   };
   // drag over accepts the target id so we can validate band/body constraints
-  const onDragOver = (id) => (e) => {
+  const onDragOver = (id: string) => (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverId(id);
@@ -598,11 +617,11 @@ export default function App() {
     const toIsBand = toSec.type === "fullwidthheader" || toSec.type === "fullwidthfooter";
     setDragAllowed(fromIsBand === toIsBand);
   };
-  const onDragLeave = (id) => () => {
+  const onDragLeave = (id: string) => () => {
     setDragOverId((cur) => (cur === id ? null : cur));
     setDragAllowed(true);
   };
-  const onDrop = (id) => (e) => {
+  const onDrop = (id: string) => (e: React.DragEvent) => {
     e.preventDefault();
     const fromId = draggingId.current;
     setDragOverId(null);
@@ -635,7 +654,7 @@ export default function App() {
   const addParagraph = () =>
     setSections((s) => [
       ...s,
-      { id: cryptoRandom(), type: "paragraph", content: "New paragraph..." },
+      { id: cryptoRandom(), type: "paragraph", content: "New paragraph..." } as Section,
     ]);
 
   /**
@@ -651,10 +670,10 @@ export default function App() {
         label: "CLICK HERE",
         href: "https://example.com",
         color: brandDefaults.ctaColor, // brand default at creation
-      },
+      } as Section,
     ]);
 
-  const addImgText = (variant) =>
+  const addImgText = (variant: "left" | "right") =>
     setSections((s) => [
       ...s,
       {
@@ -664,14 +683,14 @@ export default function App() {
         img: PLACEHOLDER_IMG,
         alt: "Image",
         content: "<h2>Your headline</h2><p>Add your supporting copy here.</p>",
-      },
+      } as Section,
     ]);
 
   // NEW: add a full-width header band
   const addFullWidthHeader = () =>
     setSections((s) => {
       if (s.some((x) => x.type === "fullwidthheader")) return s;
-      const next = [
+      const next: Section[] = [
         ...s,
         {
           id: cryptoRandom(),
@@ -680,7 +699,7 @@ export default function App() {
           textColor: "#ffffff",
           html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
           fontSize: 18,
-        },
+        } as Section,
       ];
       // ensure header band starts expanded when added
       setHeaderBandOpen(true);
@@ -691,7 +710,7 @@ export default function App() {
   const addFullWidthFooter = () =>
     setSections((s) => {
       if (s.some((x) => x.type === "fullwidthfooter")) return s;
-      const next = [
+      const next: Section[] = [
         ...s,
         {
           id: cryptoRandom(),
@@ -700,7 +719,7 @@ export default function App() {
           textColor: "#ffffff",
           html: "<strong>GREAT NEWS!<br/>YOUR ORDER IS IN TRANSIT TO US</strong>",
           fontSize: 12,
-        },
+        } as Section,
       ];
       // ensure footer band starts expanded when added
       setFooterBandOpen(true);
@@ -715,12 +734,12 @@ export default function App() {
         id: cryptoRandom(),
         type: "separator",
         color: brandColors.primary || "#e5e7eb",
-      },
+      } as Section,
     ]);
 
-  const updateSection = (id, patch) =>
-    setSections((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-  const removeSection = (id) => setSections((s) => s.filter((x) => x.id !== id));
+  const updateSection = (id: string, patch: Partial<Section>) =>
+    setSections((s) => s.map((x) => (x.id === id ? ({ ...x, ...patch } as Section) : x)));
+  const removeSection = (id: string) => setSections((s) => s.filter((x) => x.id !== id));
 
   /**
    * Exports the current editor state as a JSON file.
@@ -751,19 +770,19 @@ export default function App() {
   };
 
   // Resolve an imported brand identifier (key or name) to a real brand key
-  const resolveBrandKey = (val) => {
+  const resolveBrandKey = (val: unknown) => {
     if (!val) return null;
     const raw = String(val).trim();
     // exact key match
     if (brands[raw]) return raw;
     // name match (case-insensitive)
-    const found = Object.entries(brands).find(
-      ([k, b]) => (b.name || k).toLowerCase() === raw.toLowerCase(),
+    const found = (Object.entries(brands) as Array<[string, Brand]>).find(
+      ([k, b]) => (b.brandName || k).toLowerCase() === raw.toLowerCase(),
     );
     return found ? found[0] : null;
   };
 
-  const importInputRef = useRef(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   /**
    * Import a JSON file into the editor state.
    * The imported file should contain a JSON object with the following properties:
@@ -772,10 +791,14 @@ export default function App() {
    * - `fields` (optional): object mapping fence names to their new values
    * - `sections` (optional): array of section objects to replace the current section list
    */
-  const importJSON = (file) => {
+  const importJSON = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
+        if (typeof reader.result !== "string") {
+          alert("Invalid JSON file.");
+          return;
+        }
         const data = JSON.parse(reader.result);
 
         // 1) Work out the desired brand from several possible fields.
@@ -795,62 +818,60 @@ export default function App() {
 
         // 2) Sections: keep valid colors; otherwise leave undefined so render falls back to brand default
         if (Array.isArray(data.sections)) {
-          const mapped = data.sections.map((s) => {
-            if (s.type === "cta") {
+          const mapped: Section[] = data.sections.map((s: unknown) => {
+            const sAny = s as Record<string, unknown>;
+            const t = String(sAny.type || "paragraph");
+            if (t === "cta") {
               return {
-                id: s.id || cryptoRandom(),
+                id: (sAny.id as string) || cryptoRandom(),
                 type: "cta",
-                label: s.label || "CLICK HERE",
-                href: s.href || "https://example.com",
-                color: isHex(s.color) ? s.color : undefined,
-              };
+                label: (sAny.label as string) || "CLICK HERE",
+                href: (sAny.href as string) || "https://example.com",
+                color: isHex(String(sAny.color)) ? (sAny.color as string) : undefined,
+              } as Section;
             }
-            if (s.type === "imgtext") {
+            if (t === "imgtext") {
               return {
-                id: s.id || cryptoRandom(),
+                id: (sAny.id as string) || cryptoRandom(),
                 type: "imgtext",
-                variant: s.variant === "right" ? "right" : "left",
-                img: s.img || PLACEHOLDER_IMG,
-                alt: s.alt || "Image",
-                content: s.content || "",
-              };
+                variant: sAny.variant === "right" ? "right" : "left",
+                img: (sAny.img as string) || PLACEHOLDER_IMG,
+                alt: (sAny.alt as string) || "Image",
+                content: (sAny.content as string) || "",
+              } as Section;
             }
-            if (s.type === "separator") {
+            if (t === "separator") {
               return {
-                id: s.id || cryptoRandom(),
+                id: (sAny.id as string) || cryptoRandom(),
                 type: "separator",
-                color: isHex(s.color) ? s.color : undefined,
-              };
+                color: isHex(String(sAny.color)) ? (sAny.color as string) : undefined,
+              } as Section;
             }
-            if (
-              s.type === "fullwidth" ||
-              s.type === "fullwidthheader" ||
-              s.type === "fullwidthfooter"
-            ) {
-              const isFooter = s.type === "fullwidthfooter" || s.location === "footer";
+            if (t === "fullwidth" || t === "fullwidthheader" || t === "fullwidthfooter") {
+              const isFooter = sAny.type === "fullwidthfooter" || sAny.location === "footer";
               return {
-                id: s.id || cryptoRandom(),
+                id: (sAny.id as string) || cryptoRandom(),
                 type: isFooter ? "fullwidthfooter" : "fullwidthheader",
-                color: isHex(s.color) ? s.color : undefined,
-                textColor: isHex(s.textColor) ? s.textColor : undefined,
-                html: s.html || "",
-                fontSize: Number.isFinite(Number(s.fontSize))
-                  ? Number(s.fontSize)
+                color: isHex(String(sAny.color)) ? (sAny.color as string) : undefined,
+                textColor: isHex(String(sAny.textColor)) ? (sAny.textColor as string) : undefined,
+                html: (sAny.html as string) || "",
+                fontSize: Number.isFinite(Number(sAny.fontSize))
+                  ? Number(sAny.fontSize)
                   : isFooter
                     ? 12
                     : 18,
-              };
+              } as Section;
             }
             // default to paragraph
             return {
-              id: s.id || cryptoRandom(),
+              id: (sAny.id as string) || cryptoRandom(),
               type: "paragraph",
-              content: s.content || "",
-            };
+              content: (sAny.content as string) || "",
+            } as Section;
           });
           // Enforce single header/footer fullwidth by keeping the first of each
           const seen = { header: false, footer: false };
-          const fixed = [];
+          const fixed: Section[] = [];
           for (const it of mapped) {
             if (it.type === "fullwidthheader") {
               if (seen.header) continue;
@@ -916,6 +937,7 @@ export default function App() {
       // Fallback to manual copying
       const el = document.querySelector("#exported-html");
       const selection = window.getSelection();
+      if (!el || !selection) return alert("Select the text and copy manually.");
       const range = document.createRange();
       range.selectNodeContents(el);
       selection.removeAllRanges();
@@ -928,7 +950,7 @@ export default function App() {
   // - removes newlines/tabs
   // - collapses whitespace between tags
   // - trims leading/trailing whitespace
-  const minifyHtml = (raw) => {
+  const minifyHtml = (raw: string) => {
     if (!raw) return raw;
     // Remove newlines/tabs and collapse multiple spaces
     let s = String(raw).replace(/\r|\n|\t/g, "");
@@ -1307,7 +1329,8 @@ export default function App() {
                                   setPickerBandField(null);
                                 }}
                               />
-                              <ColorPicker
+                              {/* react-color-palette types don't include width/height */}
+                              <AnyColorPicker
                                 width={220}
                                 height={140}
                                 hideAlpha={true}
@@ -1584,7 +1607,7 @@ export default function App() {
                         <div style={{ marginTop: 8 }}>
                           <div className="label">Text</div>
                           <ParagraphEditor
-                            value={s.content}
+                            value={s.content || ""}
                             onChange={(val) => updateSection(s.id, { content: val })}
                             modules={quillModules}
                             formats={quillFormats}
@@ -1605,7 +1628,7 @@ export default function App() {
                     ) : s.type === "paragraph" ? (
                       <div>
                         <ParagraphEditor
-                          value={s.content}
+                          value={s.content || ""}
                           onChange={(val) => updateSection(s.id, { content: val })}
                           modules={quillModules}
                           formats={quillFormats}
@@ -1659,7 +1682,7 @@ export default function App() {
                               style={{ position: "fixed", inset: 0 }}
                               onClick={() => setPickerOpenFor(null)}
                             />
-                            <ColorPicker
+                            <AnyColorPicker
                               width={220}
                               height={140}
                               hideAlpha={true}
@@ -1760,7 +1783,7 @@ export default function App() {
                                 style={{ position: "fixed", inset: 0 }}
                                 onClick={() => setPickerOpenFor(null)}
                               />
-                              <ColorPicker
+                              <AnyColorPicker
                                 width={220}
                                 height={140}
                                 hideAlpha={true}
@@ -1861,7 +1884,17 @@ export default function App() {
 }
 
 /* ===================== Small components & utils ===================== */
-function FieldText({ value, onChange, max, counter }) {
+function FieldText({
+  value,
+  onChange,
+  max,
+  counter,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  max?: number;
+  counter?: boolean;
+}) {
   const clearField = () => onChange("");
   const charCount = value.length;
 
@@ -1893,13 +1926,25 @@ function cryptoRandom() {
   return `id_${Math.random().toString(16).slice(2)}`;
 }
 
-function ParagraphEditor({ value, onChange, modules, formats }) {
-  const quillRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
-  const [triggerIndex, setTriggerIndex] = useState(null);
-  const [active, setActive] = useState(0); // flat index across groups
+type QuillModules = unknown;
+type QuillFormats = unknown;
+function ParagraphEditor({
+  value,
+  onChange,
+  modules,
+  formats,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  modules: QuillModules;
+  formats: QuillFormats;
+}) {
+  const quillRef = useRef<QuillComponent | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
+  const [query, setQuery] = useState<string>("");
+  const [anchor, setAnchor] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [triggerIndex, setTriggerIndex] = useState<number | null>(null);
+  const [active, setActive] = useState<number>(0); // flat index across groups
 
   const filteredGroups = useMemo(() => filterGroups(query), [query]);
   const flat = useMemo(
@@ -1916,7 +1961,7 @@ function ParagraphEditor({ value, onChange, modules, formats }) {
     if (!quill) return;
     const root = quill.root;
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "#") {
         e.preventDefault();
         const r = quill.getSelection(true);
@@ -1988,14 +2033,14 @@ function ParagraphEditor({ value, onChange, modules, formats }) {
   useEffect(() => {
     const quill = quillRef.current?.getEditor?.();
     if (!quill) return;
-    const onSel = (range) => {
+    const onSel = (range: unknown) => {
       if (!range) setOpen(false);
     };
     quill.on("selection-change", onSel);
     return () => quill.off?.("selection-change", onSel);
   }, []);
 
-  const choose = (item) => {
+  const choose = (item: { value: string }) => {
     const quill = quillRef.current?.getEditor?.();
     if (!quill || triggerIndex == null) return;
     quill.deleteText(triggerIndex, 1, "user");
@@ -2006,14 +2051,14 @@ function ParagraphEditor({ value, onChange, modules, formats }) {
 
   return (
     <div style={{ position: "relative" }}>
-      <ReactQuill
+      {/* react-quill-new types are noisy; cast component to any to allow props */}
+      <AnyReactQuill
         ref={quillRef}
         theme="snow"
         value={value}
         onChange={onChange}
         modules={modules}
         formats={formats}
-        scrollingContainer={null}
       />
       {open && (
         <div
@@ -2055,13 +2100,23 @@ function ParagraphEditor({ value, onChange, modules, formats }) {
   );
 }
 
-function MergeInput({ value, onChange, maxLength, placeholder }) {
-  const inputRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [triggerIndex, setTriggerIndex] = useState(null);
-  const [active, setActive] = useState(0);
-  const [anchor, setAnchor] = useState({ top: 0, left: 0 });
+function MergeInput({
+  value,
+  onChange,
+  maxLength,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  maxLength?: number;
+  placeholder?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
+  const [query, setQuery] = useState<string>("");
+  const [triggerIndex, setTriggerIndex] = useState<number | null>(null);
+  const [active, setActive] = useState<number>(0);
+  const [anchor, setAnchor] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const filteredGroups = useMemo(() => filterGroups(query), [query]);
   const flat = useMemo(
@@ -2072,7 +2127,7 @@ function MergeInput({ value, onChange, maxLength, placeholder }) {
     setActive(0);
   }, [query]);
 
-  const openMenuAtInput = (caretIndex) => {
+  const openMenuAtInput = (caretIndex: number) => {
     const el = inputRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
@@ -2083,7 +2138,7 @@ function MergeInput({ value, onChange, maxLength, placeholder }) {
     setOpen(true);
   };
 
-  const insertAt = (text, start, end, insert) => {
+  const insertAt = (text: string, start: number, end: number, insert: string) => {
     const before = text.slice(0, start);
     const after = text.slice(end);
     let next = before + insert + after;
@@ -2094,20 +2149,20 @@ function MergeInput({ value, onChange, maxLength, placeholder }) {
     return next;
   };
 
-  const choose = (item) => {
+  const choose = (item: { value: string }) => {
     const el = inputRef.current;
     if (!el || triggerIndex == null) return;
     const next = insertAt(value, triggerIndex, triggerIndex + 1, item.value);
-    const caret = Math.min(next.length, triggerIndex + item.value.length);
+    const caret = Math.min(next.length, (triggerIndex as number) + item.value.length);
     onChange(next);
     setOpen(false);
     requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(caret, caret);
+      inputRef.current?.focus?.();
+      inputRef.current?.setSelectionRange?.(caret, caret);
     });
   };
 
-  const onKeyDown = (e) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const el = inputRef.current;
     if (!el) return;
 

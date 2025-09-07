@@ -1,4 +1,7 @@
-declare module "*.html?raw";
+declare module "*.html?raw" {
+  const content: string;
+  export default content;
+}
 declare module "*.css";
 declare module "react-quill-new";
 declare module "react-color-palette";
