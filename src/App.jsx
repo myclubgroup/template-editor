@@ -500,6 +500,35 @@ const sectionHTML = {
 /* ======================================================== */
 
 export default function App() {
+  const [previewMode, setPreviewMode] = useState("desktop"); // desktop | tablet | mobile
+
+  function PreviewModeButtons() {
+    return (
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          className={`btn ${previewMode === "desktop" ? "primary" : ""}`}
+          onClick={() => setPreviewMode("desktop")}
+          title="Desktop"
+        >
+          Desktop
+        </button>
+        <button
+          className={`btn ${previewMode === "tablet" ? "primary" : ""}`}
+          onClick={() => setPreviewMode("tablet")}
+          title="Tablet"
+        >
+          Tablet
+        </button>
+        <button
+          className={`btn ${previewMode === "mobile" ? "primary" : ""}`}
+          onClick={() => setPreviewMode("mobile")}
+          title="Mobile"
+        >
+          Mobile
+        </button>
+      </div>
+    );
+  }
   const [brands, setBrands] = useState({}); // <— loaded from JSON
   const [brand, setBrand] = useState(""); // use first brand once loaded
   const [html, setHtml] = useState(() => baseTemplate.trim()); // base template
@@ -2063,10 +2092,21 @@ export default function App() {
         </div>
         {/* Right panel: Live preview */}
         <div className="preview flex-1 overflow-y-auto flex flex-col">
-          <div className="title sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
-            Live Preview
+          <div
+            className="title sticky top-0 z-10 bg-gray-50 border-b border-gray-200"
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+          >
+            <div>Live Preview</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <PreviewModeButtons />
+            </div>
           </div>
-          <iframe title="preview" className="w-full flex-1 border-0" srcDoc={html} />
+
+          <div className="preview-viewport-wrap">
+            <div className={`preview-viewport preview-viewport--${previewMode}`}>
+              <iframe title="preview" className="preview-iframe" srcDoc={html} />
+            </div>
+          </div>
         </div>
       </div>
 
